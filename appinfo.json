@@ -1,0 +1,21 @@
+{
+    "id": "com.siblue.jwplayer",
+    "version": "1.0.0",
+    "vendor": "Siblue",
+    "type": "web",
+    "main": "index.html",
+    "title": "JW Broadcast Media Player (Unofficial)",
+    "icon": "icon.png",
+    "largeIcon": "largeIcon.png",
+    "uiRevision": 2,
+    "requiredPermissions": [
+        "network.operation"
+    ],
+    "csp": {
+        "connect-src": [
+            "https://*.jw-cdn.org",
+            "https://b.jw-cdn.org",
+            "https://cfp2.jw-cdn.org"
+        ]
+    }
+}

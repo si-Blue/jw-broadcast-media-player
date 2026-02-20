@@ -1,0 +1,1773 @@
+body { background: #1a1a1a; color: #eee; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+
+/* Global focus styles for TV remote navigation */
+*:focus {
+    outline: none; /* Remove default browser outline */
+}
+
+/* Ensure all focusable elements have visible focus indicators */
+button:focus,
+a:focus,
+[tabindex]:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+}
+
+
+#top-nav {
+    display: flex;
+    align-items: center;
+    padding: 1px;
+    background-color: #1a1a1a; /* Solid black matches image_d807c2.jpg */
+    /* background: #0d0d0d; */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-height: 72px;
+}
+
+
+/* Logo: white text in a black rectangular block (left) */
+.logo {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #fff;
+    /* background: #000; */
+    padding: 12px 24px;
+    margin-right: 48px;
+    letter-spacing: 0.02em;
+}
+/* Logo Styling */
+.jwb-logo {
+    /* height: 140px;  */
+    /* width: auto; */
+    display: block;
+    margin-right: 32px;  
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding-right: 8px;
+}
+
+#top-nav > nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Main nav links: white text by default; active = light pill with dark text */
+.nav-item {
+    display: inline-block;
+    margin: 0;
+    font-size: 1.85rem;
+    font-weight: 600;
+    color: #888888;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+}
+
+.nav-item:hover,
+.nav-item:focus {
+    color: #fff;
+    outline: none;
+}
+
+/* Selected/active item: bright pill so it's easy to see which tab is selected */
+.nav-item.active {
+    background: #616161;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.nav-item.active:focus {
+    background: #616161;
+    box-shadow: 0 0 0 2px #4a90e2, 0 2px 10px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+}
+
+/* Focus when moving with remote - visible highlight before selecting */
+.nav-item:focus:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+}
+#content-area { padding: 0 50px 50px 50px; }
+
+#grid-container { 
+    margin-top: 40px;
+    padding: 8px;
+}
+
+.grid {
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); /* Matches your photo exactly */
+    gap: 30px; 
+}
+
+.video-card p { 
+    padding: 12px 5px; 
+    margin: 0; 
+    font-size: 1rem; 
+    text-align: center; /* Centers the title under the thumbnail */
+    color: #ccc;
+}
+
+.video-card {
+    border: 3px solid transparent;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.video-card:focus { 
+    border-color: #4a90e2; 
+    border-width: 4px;
+    transform: scale(1.05); 
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.video-card img { width: 100%; display: block; }
+.video-card p { padding: 10px; margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#player-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000; /* Force black background */
+    z-index: 9999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none; /* Remove focus outline */
+}
+
+#player-container:focus {
+    outline: none;
+}
+
+#player {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    /* Hide native controls for TV – app controls playback via remote */
+    object-fit: contain;
+}
+/* On TV: hide fullscreen, volume, mute, overflow menu, and captions (keep play/pause + time + progress) */
+#player::-webkit-media-controls-fullscreen-button { display: none !important; }
+#player::-webkit-media-controls-mute-button { display: none !important; }
+#player::-webkit-media-controls-volume-slider { display: none !important; }
+#player::-webkit-media-controls-volume-slider-container { display: none !important; }
+#player::-webkit-media-controls-overflow-button { display: none !important; }
+#player::-webkit-media-controls-closed-captions-container { display: none !important; }
+#player::-webkit-media-controls-toggle-closed-captions-button { display: none !important; }
+/* Alternate/Chromium-internal names for 3-dot overflow menu (webOS may use these) */
+#player::-webkit-media-controls-overflow-menu-button { display: none !important; }
+#player::-internal-media-controls-overflow-button { display: none !important; }
+#player::-webkit-media-controls-overflow-panel { display: none !important; }
+
+/* Audio Player UI */
+.audio-player-ui {
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
+    overflow-y: auto;
+}
+
+.audio-player-now-playing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 60px;
+}
+
+.audio-player-thumbnail {
+    width: 400px;
+    height: 400px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.audio-player-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.audio-player-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.audio-player-title {
+    font-size: 2.5rem;
+    color: #fff;
+    margin: 0 0 30px 0;
+    font-weight: 600;
+}
+
+.audio-player-playlist-section {
+    width: 100%;
+    max-width: 100%;
+}
+
+.audio-playlist-title {
+    font-size: 1.8rem;
+    color: #fff;
+    margin: 0 0 20px 0;
+    font-weight: 600;
+}
+
+.audio-playlist-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 16px 10px 16px; /* Horizontal padding so focus ring isn't clipped */
+    scrollbar-width: thin;
+    scrollbar-color: #555 #222;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS/webOS */
+}
+
+.audio-playlist-row::-webkit-scrollbar {
+    height: 8px;
+}
+
+.audio-playlist-row::-webkit-scrollbar-track {
+    background: #222;
+}
+
+.audio-playlist-row::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+/* Ensure playlist items don't shrink and maintain their size */
+.audio-playlist-row .media-item-card {
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.audio-pause-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 18px 40px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 3px solid transparent;
+}
+
+.audio-pause-button svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+}
+
+.audio-pause-button:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+    transform: scale(1.05);
+}
+
+.audio-pause-button:hover {
+    background: #f0f0f0;
+}
+
+/* Audio progress bar (elapsed, bar, remaining) */
+.audio-progress-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 24px;
+}
+
+.audio-time {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.1rem;
+    color: #aaa;
+    min-width: 3.5em;
+    text-align: center;
+}
+
+.audio-progress-track {
+    flex: 1;
+    height: 10px;
+    background: #333;
+    border-radius: 5px;
+    cursor: pointer;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.audio-progress-track:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.4);
+}
+
+.audio-progress-fill {
+    height: 100%;
+    min-width: 0;
+    background: #4a90e2;
+    border-radius: 5px;
+    transition: width 0.15s linear;
+}
+
+/* Remove any other video-related IDs like #video-player-container from your CSS */
+
+.hidden {
+    display: none !important;
+}
+
+/* Error state: message + Try again button (API/load failures) */
+.error-state {
+    padding: 60px 40px;
+    text-align: center;
+    max-width: 500px;
+    margin: 40px auto 0;
+}
+.error-state p {
+    font-size: 1.3rem;
+    color: #ccc;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+.error-state .error-retry-btn {
+    padding: 14px 32px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    background: #4a90e2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.error-state .error-retry-btn:hover,
+.error-state .error-retry-btn:focus {
+    background: #5aa0f2;
+    outline: none;
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+/* Toast for brief messages (e.g. Watch Now failed) */
+.app-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 28px;
+    background: rgba(40, 40, 40, 0.98);
+    color: #eee;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 10001;
+    animation: toastIn 0.25s ease;
+}
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Playback error overlay inside player */
+.playback-error-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    z-index: 10;
+}
+.playback-error-overlay p {
+    font-size: 1.3rem;
+    color: #ccc;
+    margin: 0 0 24px 0;
+}
+.playback-error-overlay .error-close-btn {
+    padding: 12px 28px;
+    font-size: 1.1rem;
+    background: #4a90e2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.playback-error-overlay .error-close-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+/* Container for the entire row section */
+.media-shelf-section {
+    margin-bottom: 40px;
+    padding-left: 20px;
+}
+
+.media-shelf-title {
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+/* The horizontal scrolling row - padding so focus ring isn't clipped; gap matches reference spacing */
+.media-row-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 24px; /* Consistent spacing between Play All, Shuffle, and thumbnails */
+    padding: 8px 16px 20px 16px; /* Extra horizontal padding so focus ring (outline + offset) isn't clipped */
+    scrollbar-width: none; /* Hide for Firefox */
+}
+
+.media-row-wrapper::-webkit-scrollbar {
+    display: none; /* Hide for LG webOS / Chrome */
+}
+
+/* Individual Video Item */
+.media-item-card {
+    flex: 0 0 340px; /* Fixed width matching the 343px in your HTML snippet */
+    border: 3px solid transparent;
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Home featured row: larger cards, no Play All/Shuffle (handled by not passing those options) */
+.media-shelf-section.featured-row .media-item-card {
+    flex: 0 0 680px;
+}
+
+/* Thumbnail container inside card (this gets the background) */
+.media-item-card .thumbnail-container {
+    background: #111;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+}
+
+/* Audio cards have fully rounded thumbnails */
+.media-item-card.audio-card .thumbnail-container {
+    border-radius: 8px; /* Fully rounded like action buttons */
+}
+
+.media-item-card:focus {
+    outline: none;
+    /* Ring drawn on thumbnail only so title is not highlighted */
+}
+
+.media-item-card:focus .thumbnail-container {
+    outline: 4px solid #4a90e2;
+    outline-offset: 2px;
+    transform: scale(1.03);
+    border-radius: 8px; /* Fully rounded like Play All / Shuffle */
+}
+
+.media-item-card img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 5px;
+    display: block;
+    object-fit: cover;
+}
+
+.media-item-card.audio-card img {
+    aspect-ratio: 1 / 1; /* Forces square shape */
+    width: 100%;
+    object-fit: contain; /* Ensures the full album art is visible */
+    background: #222;    /* Adds a dark background for any padding */
+}
+
+.media-item-card.audio-card {
+    flex: 0 0 240px; /* Smaller width for squares looks better in rows */
+}
+
+.media-item-card-title {
+    padding: 10px 0 0 0;
+    margin: 0;
+    color: #ccc;
+    font-size: 1.1rem;
+    white-space: normal; /* Allow titles to wrap to 2 lines */
+    min-height: 3em;
+    /* Title is now outside the card background, floating below */
+    background: transparent;
+    text-align: center; /* Center the text */
+}
+
+/* Action Bar for Play All/Shuffle */
+#action-bar {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+
+.action-button {
+    background-color: #333;
+    color: #fff;
+    border: 2px solid #555;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.action-button {
+    background-color: #333;
+    color: #fff;
+    border: 2px solid #555;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-button:focus,
+.action-button:hover {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+    border-width: 3px;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+    transform: scale(1.05);
+}
+
+.video-landing-container {
+    padding: 40px;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.video-details-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+    /* background: linear-gradient(to right, rgba(0,0,0,0.9), transparent); */
+    padding: 20px;
+    border-radius: 20px;
+}
+
+.video-info-text { flex: 1; }
+.video-info-text h1 {
+    font-size: 2.8rem;
+    margin: 0 0 15px 0;
+}
+.video-desc { font-size: 1.2rem; color: #bbb; line-height: 1.6; max-width: 800px; }
+
+.video-preview-img { flex: 1; }
+.video-preview-img img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+}
+
+.video-preview-img.audio-preview img {
+    aspect-ratio: 1 / 1;
+    width: 60%; /* Keeps the square art from becoming too massive */
+    margin: 0 auto;
+    display: block;
+}
+
+.landing-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.landing-btn {
+    padding: 15px 40px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.play-btn { background: #fff; color: #000; }
+.secondary-btn { background: #333; color: #fff; }
+
+.landing-btn:focus {
+    transform: scale(1.1);
+    border-color: #4a90e2;
+    border-width: 4px;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Force square aspect ratio for audio cards */
+.media-item-card.audio-card img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    background: #222;
+}
+
+.media-item-card.audio-card {
+    flex: 0 0 240px; /* Slimmer cards for the square look */
+    position: relative;
+}
+
+/* Headphone Icon Overlay */
+.audio-icon-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.audio-icon-overlay svg {
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+}
+
+/* Square preview for landing page */
+.audio-preview img {
+    aspect-ratio: 1 / 1 !important;
+    width: 300px !important;
+    margin: 0 auto;
+}
+
+/* Container to hold img and overlays */
+.thumbnail-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Audio icon sizing inside the overlay */
+.audio-icon-container svg {
+    width: 14px;
+    height: 14px;
+    fill: #fff;
+}
+
+/* Ensure audio cards remain square */
+.audio-card .thumbnail-container img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+/* Video cards remain 16:9 */
+.media-item-card .thumbnail-container img {
+    aspect-ratio: 16 / 9;
+}
+
+/* Duplicate removed - using definition above */
+
+.play-icon, .headphone-icon {
+    width: 16px;
+    height: 16px;
+    fill: #fff;
+    display: block;
+}
+
+.duration-text {
+    line-height: 1;
+}
+
+/* Square Audio Thumbnails */
+.audio-card .thumbnail-container img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+/* Video Thumbnails (Widescreen) */
+.media-item-card .thumbnail-container img {
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
+/* Audio row cards: square thumbnails (higher specificity so it wins over 16/9 above) */
+.media-item-card.audio-card .thumbnail-container img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+/* Landing Page Adjustments */
+.audio-preview img {
+    aspect-ratio: 1 / 1 !important;
+    max-width: 350px !important;
+    margin: 0 auto;
+    display: block;
+}
+
+/* Header action buttons (Search, Settings) - same height as nav tabs for TV */
+.header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    min-height: 44px;
+    box-sizing: border-box;
+    background: transparent;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    transition: all 0.2s;
+    color: #888888;
+}
+
+.header-action-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+}
+
+.header-action-btn:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: transparent;
+    outline: none;
+    /* box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    transform: scale(1.05); */
+}
+
+/* Watch Now in header - same size as nav tabs (Home, Video Categories, Audio) */
+#top-nav .watch-now-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    padding: 10px 24px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.85rem;
+    font-weight: 600;
+    border: none;
+    transition: all 0.2s;
+    color: #888888;
+}
+
+#top-nav .watch-now-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+}
+
+#top-nav .watch-now-btn:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    /* box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    transform: scale(1.02); */
+}
+
+/* Watch Now when used outside header (e.g. hero) */
+.watch-now-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 15px 30px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    color: #eee;
+}
+
+.watch-now-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.watch-now-btn:focus {
+    color: #fff;
+    /* border-color: #4a90e2;
+    border-width: 3px; */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+    transform: scale(1.05);
+}
+
+/* Specific styling for the hero-section Watch Now button */
+#category-hero .watch-now-btn {
+    margin-left: 0;
+    width: fit-content;
+    margin-top: 15px;
+}
+
+/* Category Hero Section styling */
+#category-hero {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    padding: 30px 0;
+    margin-bottom: 20px;
+}
+
+#category-hero img {
+    width: 240px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.hero-info h1 { font-size: 2.5rem; margin: 0; }
+.hero-btn { margin-left: 0; margin-top: 20px; width: fit-content; }
+
+/* Overlay styling */
+.bottom-overlay {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 0.85rem;
+    z-index: 2;
+}
+
+.media-icon { width: 16px; height: 16px; fill: #fff; }
+
+/* Blue Action Cards (Play All / Shuffle) */
+.action-card-blue {
+    background-color: transparent !important;
+    display: flex;
+    flex-direction: column;
+    border: 3px solid transparent !important;
+    padding: 0; /* Remove padding to ensure exact sizing */
+    box-sizing: border-box; /* Include border in width calculation */
+    /* Match video card width */
+    flex: 0 0 340px;
+}
+
+/* Thumbnail-sized blue box for action cards */
+.action-card-blue .action-card-thumbnail {
+    background-color: #4a6da7;
+    width: 100%;
+    aspect-ratio: 16 / 9; /* Match video thumbnail aspect ratio */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px; /* Fully rounded like video thumbnails */
+    overflow: hidden;
+}
+
+/* For audio rows, make action cards square and match thumbnail size exactly */
+.media-row-wrapper:has(.audio-card) .action-card-blue {
+    flex: 0 0 240px; /* Match audio card width exactly */
+    padding: 0; /* Remove any padding that might affect size */
+    box-sizing: border-box; /* Include border in width calculation */
+    margin: 0; /* Remove any margin */
+}
+
+.media-row-wrapper:has(.audio-card) .action-card-blue .action-card-thumbnail {
+    aspect-ratio: 1 / 1; /* Square like audio thumbnails and reference */
+    border-radius: 8px;
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.action-card-blue:focus {
+    outline: none;
+    /* Ring drawn on thumbnail only so label is not highlighted */
+}
+
+.action-card-blue:focus .action-card-thumbnail {
+    outline: 4px solid #4a90e2;
+    outline-offset: 2px;
+    transform: scale(1.03);
+    background-color: #fff;
+}
+
+.action-card-blue:focus .action-label {
+    color: #fff;
+}
+
+.action-card-blue:focus .action-svg {
+    fill: #000;
+}
+
+.action-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.action-icon-circle {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(255,255,255,0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-icon-circle svg {
+    width: 35px;
+    height: 35px;
+    fill: #fff;
+}
+
+.action-label {
+    color: #ccc;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 10px 0 0 0;
+    margin: 0;
+    /* Label floats below the blue box, matching video card title style */
+    min-height: 3em;
+    background: transparent;
+    text-align: center; /* Center the text */
+}
+
+/* Audio row action cards are handled above with :has() selector */
+
+.action-svg {
+    width: 80px;
+    height: 80px;
+    fill: #fff;
+    display: block;
+}
+
+/* SVG image for Play All icon */
+.action-svg-img {
+    width: 80px;
+    height: 80px;
+    display: block;
+    filter: brightness(0) invert(1); /* Convert black SVG to white */
+}
+
+/* Icon wrappers */
+.play-all-icon-wrapper,
+.shuffle-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Search Modal */
+#search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#search-modal.hidden {
+    display: none;
+}
+
+.search-modal-content {
+    width: 90%;
+    max-width: 1200px;
+    background: #111;
+    border-radius: 12px;
+    padding: 40px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.search-header h2 {
+    font-size: 2.5rem;
+    margin: 0;
+    color: #fff;
+}
+
+.search-close-btn {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 3rem;
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.search-close-btn:focus {
+    color: #fff;
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.search-input-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-bar-trigger {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0;
+    pointer-events: none;
+}
+.search-bar-trigger:focus {
+    outline: none;
+}
+.search-input-container:has(.search-bar-trigger:focus-visible) #search-input {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+#search-input {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 1.3rem;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    transition: all 0.2s;
+}
+
+#search-input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.search-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.search-filter-btn {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: bold;
+}
+
+.search-filter-btn.active,
+.search-filter-btn:focus {
+    background: #4a90e2;
+    border-color: #4a90e2;
+    color: #fff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.search-results {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 300px;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #222;
+    -webkit-overflow-scrolling: touch;
+}
+
+.search-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: #222;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+.search-placeholder {
+    text-align: center;
+    color: #666;
+    font-size: 1.2rem;
+    padding: 40px;
+}
+
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.search-loading {
+    text-align: center;
+    color: #aaa;
+    padding: 40px;
+    font-size: 1.2rem;
+}
+
+.search-no-results {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+    font-size: 1.2rem;
+}
+
+/* Settings Modal */
+#settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#settings-modal.hidden {
+    display: none;
+}
+
+.settings-modal-content {
+    width: 90%;
+    max-width: 800px;
+    background: #111;
+    border-radius: 12px;
+    padding: 40px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.settings-header h2 {
+    font-size: 2.5rem;
+    margin: 0;
+    color: #fff;
+}
+
+.settings-close-btn {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 3rem;
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.settings-close-btn:focus {
+    color: #fff;
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.settings-content {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 30px;
+}
+
+/* Settings as list of rows (label left, value + > right). Blue only for remote/keyboard focus. */
+.settings-list {
+    background: #2a2a2a;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    padding: 12px 0;
+}
+.settings-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 22px 24px;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+    text-align: left;
+    box-sizing: border-box;
+}
+.settings-list-row:last-child {
+    margin-bottom: 0;
+}
+.settings-list-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.settings-list-row:focus {
+    outline: none;
+}
+/* Blue highlight only when focused via remote/keyboard (focus-visible), not on mouse click */
+.settings-list-row:focus-visible {
+    background: #4a90e2;
+}
+.settings-list-row:focus-visible .settings-row-value {
+    color: #fff;
+}
+.settings-row-label {
+    flex: 1;
+    min-width: 0;
+}
+.settings-row-value {
+    flex-shrink: 0;
+    margin-left: 16px;
+    color: rgba(255, 255, 255, 0.9);
+}
+.settings-row-arrow {
+    margin-left: 6px;
+    opacity: 0.9;
+}
+
+.settings-section {
+    margin-bottom: 40px;
+}
+
+.settings-section h3 {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 15px;
+}
+
+.settings-search-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.settings-search-input::placeholder {
+    color: #888;
+}
+
+.settings-search-input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.settings-select {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.settings-select:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.settings-select option {
+    background: #222;
+    color: #fff;
+}
+
+.settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+}
+
+.settings-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background: #444;
+    border-radius: 15px;
+    transition: background 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.3s;
+}
+
+.settings-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: #4a90e2;
+}
+
+.settings-toggle input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(30px);
+}
+
+.settings-toggle:focus .toggle-slider {
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.toggle-label {
+    font-size: 1.2rem;
+    color: #ccc;
+}
+
+.settings-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.settings-save-btn {
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    background: #4a90e2;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.settings-save-btn:focus {
+    background: #5aa0f2;
+    border-color: #5aa0f2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+    transform: scale(1.05);
+}
+
+/* ----- focusable-select (settings dropdowns): single consolidated block ----- */
+.focusable-select {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    background: #222;
+    border: 3px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.focusable-select:focus,
+.focusable-select:focus-within {
+    border-color: #4a90e2;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.focusable-select .selected-value {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* let mouse clicks pass through to the select */
+}
+
+.focusable-select .dropdown-arrow {
+    pointer-events: none;
+}
+
+/* Select: on top so it receives clicks; invisible so .selected-value shows */
+.focusable-select .custom-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: transparent;
+}
+
+.focusable-select:focus .custom-select,
+.focusable-select:focus-within .custom-select {
+    background: #222;
+    color: #fff;
+}
+
+/* Force dark color on the dropdown options */
+.custom-select option {
+    background-color: #222;
+    color: #eee;
+    padding: 10px;
+}
+
+/* Optional: Style the currently hovered/focused option */
+.custom-select option:hover,
+.custom-select option:focus,
+.custom-select option:checked {
+    background-color: #4a90e2; /* Blue highlight */
+    color: #fff;
+}
+
+/* ----- Language / Resolution picker (settings page): expanded panels ----- */
+.language-picker-section {
+    margin-bottom: 20px;
+}
+.language-picker-section.hidden {
+    display: none !important;
+}
+.resolution-picker-section {
+    margin-bottom: 20px;
+}
+.resolution-picker-section.hidden {
+    display: none !important;
+}
+.resolution-picker-list {
+    background: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 280px;
+    overflow-y: auto;
+}
+.resolution-picker-list .resolution-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    color: #eee;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #3a3a3a;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: background 0.15s;
+}
+.resolution-picker-list .resolution-option:last-child {
+    border-bottom: none;
+}
+.resolution-picker-list .resolution-option:hover,
+.resolution-picker-list .resolution-option:focus {
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+.resolution-picker-list .resolution-option.selected {
+    background: #4a90e2;
+    color: #fff;
+}
+.language-picker-section .language-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.language-search-trigger {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0;
+    pointer-events: none;
+}
+.language-search-wrap:has(.language-search-trigger:focus-visible) {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.4);
+}
+.language-search-trigger:focus {
+    outline: none;
+}
+.language-search-input {
+    flex: 1;
+    padding: 14px 18px;
+    font-size: 1.1rem;
+    background: transparent;
+    border: none;
+    color: #fff;
+    min-width: 0;
+}
+.language-search-input::placeholder {
+    color: #888;
+}
+.language-search-input:focus {
+    outline: none;
+}
+.language-search-wrap:focus-within {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.4);
+}
+.language-search-clear {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #888;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+.language-search-clear:hover,
+.language-search-clear:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    outline: none;
+}
+.language-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 2px solid #444;
+    border-radius: 10px;
+    background: #1a1a1a;
+}
+.language-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    color: #eee;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    font-family: inherit;
+}
+.language-list-item:hover,
+.language-list-item:focus {
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+.language-list-item.selected {
+    background: #4a90e2;
+    color: #fff;
+}
+.language-list-item.selected:hover,
+.language-list-item.selected:focus {
+    background: #5aa0f2;
+}
+.language-list-item .language-item-text {
+    flex: 1;
+    min-width: 0;
+}
+.language-list-item .language-item-primary {
+    display: block;
+    font-weight: 600;
+}
+.language-list-item .language-item-secondary {
+    display: block;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 2px;
+}
+.language-list-item.selected .language-item-secondary {
+    color: rgba(255, 255, 255, 0.9);
+}
+.language-list-item .language-item-check {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    margin-left: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.language-list-item.selected .language-item-check {
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1a1a;
+}
+.language-list-item .language-item-check svg {
+    width: 14px;
+    height: 14px;
+}
+.thumbnail-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Full-screen loading state: centered spinner in content area */
+.app-loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px;
+}
+.app-loading-spinner-icon {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #4a90e2;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+.app-loading-screen .app-loading-text {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: #888;
+}
+
+.nav-item, 
+.header-action-btn, 
+#top-nav .watch-now-btn {
+    border: 1px solid transparent; /* Keeps layout stable when border appears */
+    transition: all 0.2s ease-in-out;
+}
+
+.nav-item:focus,
+.header-action-btn:focus,
+#top-nav .watch-now-btn:focus {
+    border-color: #4a90e2; /* Matches your video-card focus color */
+
+
+}

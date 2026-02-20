@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JW Broadcasting - webOS</title>
+    <link rel="stylesheet" href="style.css">
+    </head>
+<body>
+    <header id="top-nav">
+        <div class="logo-container">
+            <img src="https://cms-imgp.jw-cdn.org/img/p/802013053/univ/art/802013053_univ_sqs_md.jpg" class="jwb-logo" alt="JW">
+        </div>        
+        <nav>
+            <div class="nav-item" tabindex="1" data-cat="home">Home</div>
+            <div class="nav-item" tabindex="2" data-cat="VideoOnDemand">Video Categories</div>
+            <div class="nav-item" tabindex="3" data-cat="AudioOnDemand">Audio</div>
+        </nav>
+        <div class="header-actions">
+            <div id="global-watch-now" class="watch-now-btn" tabindex="4">
+                <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7l7 4z"/></svg>
+                <span>Watch Now</span>
+            </div>
+            <div id="search-btn" class="header-action-btn" tabindex="5" title="Search">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </div>
+            <div id="settings-btn" class="header-action-btn" tabindex="6" title="Settings">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </div>
+        </div>
+    </header>    
+
+    <main id="content-area">
+        <section id="hero-section"></section>
+        <div id="action-bar"></div>
+        <h2 id="section-title">Latest Videos</h2>
+        <div id="grid-container"></div>
+    </main>
+
+    <div id="player-container" class="hidden" tabindex="-1">
+        <video id="player" autoplay controls tabindex="0" controlsList="nodownload noplaybackrate nofullscreen" disablePictureInPicture disableRemotePlayback></video>
+    </div>
+
+    <div id="search-modal" class="hidden">
+        <div class="search-modal-content">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button id="search-close-btn" class="search-close-btn" tabindex="11">×</button>
+            </div>
+            <div class="search-input-container">
+                <button type="button" class="search-bar-trigger" id="search-bar-trigger" tabindex="10" aria-label="Search – press Enter to type"></button>
+                <input type="text" id="search-input" placeholder="Search..." tabindex="-1" autocomplete="off" aria-label="Search">
+            </div>
+            <div class="search-filters">
+                <button class="search-filter-btn active" data-filter="all" tabindex="12">All</button>
+                <button class="search-filter-btn" data-filter="videos" tabindex="13">Videos</button>
+                <button class="search-filter-btn" data-filter="audio" tabindex="14">Audio</button>
+            </div>
+            <div id="search-results" class="search-results">
+                <p class="search-placeholder">Enter a search term to find content</p>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script src="lib/spatial_navigation.js"></script>
+    
+    <script type="module" src="app.js"></script>
+</body>
+</html>

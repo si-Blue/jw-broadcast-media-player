@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - JW Broadcasting</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header id="top-nav">
+        <div class="logo">JW</div>
+        <nav>
+            <div class="nav-item" tabindex="1">Back</div>
+        </nav>
+    </header>
+
+    <main id="content-area">
+        <h2 id="section-title">Settings</h2>
+        <div id="settings-container">
+            <div class="settings-list">
+                <button type="button" class="settings-list-row" id="language-row" tabindex="2" aria-expanded="false" aria-haspopup="listbox">
+                    <span class="settings-row-label">Language</span>
+                    <span class="settings-row-value"><span id="language-field-value">Loading…</span> <span class="settings-row-arrow" aria-hidden="true">&gt;</span></span>
+                </button>
+                <button type="button" class="settings-list-row settings-row-toggle" id="subtitles-row" tabindex="3">
+                    <span class="settings-row-label">Display subtitles when available</span>
+                    <span class="settings-row-value" id="subtitles-value">On</span>
+                </button>
+                <button type="button" class="settings-list-row" id="resolution-row" tabindex="4" aria-expanded="false" aria-haspopup="listbox">
+                    <span class="settings-row-label">Preferred Video Resolution</span>
+                    <span class="settings-row-value"><span id="resolution-display-value">1080p</span> <span class="settings-row-arrow" aria-hidden="true">&gt;</span></span>
+                </button>
+            </div>
+
+            <div class="language-picker-section hidden" id="language-picker-section">
+                <div class="language-picker-expanded" id="language-picker-expanded">
+                    <div class="language-search-wrap">
+                        <button type="button" class="language-search-trigger" id="language-search-trigger" tabindex="0" aria-label="Search for a language – press Enter to type"></button>
+                        <input type="text" id="language-search" class="language-search-input" placeholder="Search for a language" tabindex="-1" autocomplete="off" aria-label="Search for a language">
+                        <button type="button" class="language-search-clear" id="language-search-clear" tabindex="-1" aria-label="Clear search" title="Clear">×</button>
+                    </div>
+                    <input type="hidden" id="language-select" value="">
+                    <div id="language-list" class="language-list" role="listbox" aria-label="Language list"></div>
+                </div>
+            </div>
+
+            <div class="resolution-picker-section hidden" id="resolution-picker-section">
+                <div class="resolution-picker-list" id="resolution-picker-list" role="listbox" aria-label="Resolution options"></div>
+            </div>
+
+            <div class="settings-footer">
+                <button id="settings-save-btn" class="settings-save-btn" tabindex="7">Save</button>
+            </div>
+        </div>
+    </main>
+
+    <input type="checkbox" id="subtitles-toggle" hidden aria-hidden="true">
+
+    <select id="resolution-select" hidden aria-hidden="true">
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+        <option value="480p">480p</option>
+        <option value="360p">360p</option>
+        <option value="240p">240p</option>
+    </select>
+
+    <script src="lib/spatial_navigation.js"></script>
+    <script type="module" src="settings.js"></script>
+</body>
+</html>
