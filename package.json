@@ -8,7 +8,7 @@
     "install": "ares-install com.siblue.jwplayer_1.0.0_all.ipk",
     "launch": "ares-launch com.siblue.jwplayer",
     "build-install-launch": "npm run package && npm run install && npm run launch",
-    "simulator-launch": "ares-launch -s 25 -sp ..\\webOS_TV_25_Simulator_1.4.3 ..\\mp_jw_broadcasting"
+    "simulator-launch": "ares-launch -s 25 -sp ..\\..\\webOS_TV_25_Simulator_1.4.3 ."
   },
   "author": "Siblue",
   "license": "ISC"
