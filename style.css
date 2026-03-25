@@ -1719,6 +1719,19 @@ textarea:focus {
     animation: pulse-bg 1.5s infinite ease-in-out;
 }
 
+/* Keep loading skeleton geometry identical to final thumbnails */
+.media-item-card .thumbnail-container.loading,
+.video-card .thumbnail-container.loading {
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+}
+
+.media-item-card.audio-card .thumbnail-container.loading,
+.audio-card .thumbnail-container.loading {
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+}
+
 @keyframes pulse-bg {
     0% { background-color: #1a1a1a; }
     50% { background-color: #333; }
