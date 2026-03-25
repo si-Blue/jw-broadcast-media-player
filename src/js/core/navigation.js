@@ -1,5 +1,6 @@
 // navigation.js
 export let navigationStack = [];
+const MAX_NAVIGATION_STACK = 5;
 
 // Main content only; search modal has its own section (search-modal) with restrict 'self-only'
 const SPATIAL_SELECTORS = '.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, #search-bar-trigger, .audio-pause-button, .settings-close-btn, .settings-save-btn, .settings-select, .settings-toggle, #language-select, #subtitles-toggle, #resolution-select, .error-retry-btn, .error-close-btn';
@@ -15,7 +16,7 @@ export function saveNavigationState(state) {
     const viewTitle = state.view || 'Home';
     const viewUrl = `#${viewTitle.replace(/\s+/g, '-').toLowerCase()}`;
     history.pushState(state, viewTitle, viewUrl);
-    if (navigationStack.length > 10) navigationStack.shift();
+    if (navigationStack.length > MAX_NAVIGATION_STACK) navigationStack.shift();
 }
 
 export function refreshSpatialNavigation() {

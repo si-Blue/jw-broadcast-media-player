@@ -5,6 +5,12 @@ const API_BASE = "https://b.jw-cdn.org/apis/mediator/v1";
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 const cache = new Map();
 
+function assertOk(response, context) {
+    if (!response.ok) {
+        throw new Error(`${context} failed with status ${response.status}`);
+    }
+}
+
 function getCacheKey(url) {
     return `api_cache_${url}`;
 }
@@ -89,6 +95,7 @@ async function fetchSearchByType(query, lang, typePath, token) {
             "accept": "application/json; charset=utf-8"
         }
     });
+    assertOk(response, `Search (${typePath})`);
 
     const data = await response.json();
     const results = [];

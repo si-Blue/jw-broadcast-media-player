@@ -164,8 +164,17 @@ textarea:focus {
     height: 100%;
     max-width: 100%;
     max-height: 100%;
+    background-color: #000;
     /* Hide native controls for TV – app controls playback via remote */
     object-fit: contain;
+}
+
+.video-loading-cover {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 2;
+    pointer-events: none;
 }
 /* On TV: hide fullscreen, volume, mute, overflow menu, and captions (keep play/pause + time + progress) */
 #player::-webkit-media-controls-fullscreen-button { display: none !important; }

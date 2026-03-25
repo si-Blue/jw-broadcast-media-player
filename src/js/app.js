@@ -1,11 +1,24 @@
-import * as Api from './api.js';
-import * as Nav from './navigation.js';
-import * as UI from './ui.js';
-import * as State from './state.js';
-import * as Playback from './playback.js';
-import * as Settings from './settings.js';
+import * as Api from './api/api.js';
+import * as Nav from './core/navigation.js';
+import * as UI from './features/ui.js';
+import * as State from './core/state.js';
+import * as Playback from './features/playback.js';
+import * as Settings from './features/settings.js';
 
 let currentSearchFilter = 'all';
+let viewRequestId = 0;
+let searchRequestId = 0;
+let lastFocusedBeforeSearch = null;
+
+function escapeHtml(value) {
+    if (value == null) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 /** HTML for the centered loading screen (spinner + text). Use same markup for detection. */
 const LOADING_HTML = `<div id="app-loading-spinner" class="app-loading-screen" aria-live="polite" aria-busy="true">
@@ -20,6 +33,13 @@ function isContainerLoading(container) {
 function updateGlobalActionBtn(text) {
     const btn = document.getElementById('global-watch-now');
     if (btn) btn.querySelector('span').innerText = text;
+}
+
+function logError(scope, message, err, extra = {}) {
+    console.error(`[${scope}] ${message}`, {
+        ...extra,
+        error: err?.message || String(err)
+    });
 }
 
 // --- Navigation State (build full state for back/restore) ---
@@ -221,9 +241,6 @@ function reattachEventListeners() {
 let homeSections = [];
 let contentPageSections = [];
 
-/** View cache: key -> navigation state. Restore from cache when re-entering a screen so content/lazy images don't reload. */
-const viewCache = new Map();
-
 function clearDynamicSections() {
     if (typeof SpatialNavigation !== 'undefined') {
         homeSections.forEach(id => SpatialNavigation.remove(id));
@@ -244,7 +261,7 @@ function showErrorState(container, message, onRetry) {
     container.className = '';
     container.innerHTML = `
         <div class="error-state">
-            <p>${message}</p>
+            <p>${escapeHtml(message)}</p>
             <button type="button" class="error-retry-btn" tabindex="50">Try again</button>
         </div>
     `;
@@ -271,15 +288,7 @@ function showToast(message) {
 
 // --- View Controllers ---
 async function loadHomePage() {
-    const cached = viewCache.get('home');
-    if (cached) {
-        clearDynamicSections();
-        const actionBar = document.getElementById('action-bar');
-        if (actionBar) actionBar.classList.add('hidden');
-        restoreNavigationState(cached);
-        updateGlobalActionBtn("Watch Now");
-        return;
-    }
+    const requestId = ++viewRequestId;
     const container = document.getElementById('grid-container');
     container.className = '';
     container.innerHTML = LOADING_HTML;
@@ -296,6 +305,7 @@ async function loadHomePage() {
             Api.fetchCategory('FeaturedSetTopBoxes', State.getLang()),
             Api.fetchCategory('LatestVideos', State.getLang())
         ]);
+        if (requestId !== viewRequestId) return;
 
         container.innerHTML = "";
         let newPlaylist = [];
@@ -342,25 +352,16 @@ async function loadHomePage() {
 
         Nav.refreshSpatialNavigation();
         UI.observeLazyImages();
-        const state = buildNavigationState();
-        if (state) viewCache.set('home', state);
     } catch (err) {
-        console.error("Home load failed", err);
+        if (requestId !== viewRequestId) return;
+        logError('home', 'Home load failed', err, { language: State.getLang() });
         showErrorState(container, "Unable to load home. Check your connection.", () => loadHomePage());
     }
 }
 
 async function loadTopLevelCategories() {
+    const requestId = ++viewRequestId;
     saveNavigationState();
-    const cached = viewCache.get('VideoOnDemand');
-    if (cached) {
-        clearDynamicSections();
-        const actionBar = document.getElementById('action-bar');
-        if (actionBar) actionBar.classList.add('hidden');
-        restoreNavigationState(cached);
-        updateGlobalActionBtn("Watch Now");
-        return;
-    }
     const container = document.getElementById('grid-container');
     container.className = '';
     container.innerHTML = LOADING_HTML;
@@ -374,6 +375,7 @@ async function loadTopLevelCategories() {
 
     try {
         const data = await Api.fetchCategory('VideoOnDemand', State.getLang());
+        if (requestId !== viewRequestId) return;
         container.innerHTML = "";
         container.className = "grid";
         UI.renderCategoryGrid(data.category?.subcategories || [], container, (cat) => {
@@ -382,29 +384,16 @@ async function loadTopLevelCategories() {
         });
         Nav.refreshSpatialNavigation();
         UI.observeLazyImages();
-        const state = buildNavigationState();
-        if (state) viewCache.set('VideoOnDemand', state);
     } catch (err) {
-        console.error("Categories load failed", err);
+        if (requestId !== viewRequestId) return;
+        logError('categories', 'Categories load failed', err, { language: State.getLang() });
         showErrorState(container, "Unable to load categories. Check your connection.", () => loadTopLevelCategories());
     }
 }
 
 async function loadContentPage(categoryKey, title, isAudio = false) {
+    const requestId = ++viewRequestId;
     saveNavigationState();
-    const viewKey = isAudio ? 'Audio' : `content_${categoryKey}`;
-    const cached = viewCache.get(viewKey);
-    if (cached) {
-        clearDynamicSections();
-        const actionBar = document.getElementById('action-bar');
-        if (actionBar) actionBar.classList.add('hidden');
-        restoreNavigationState(cached);
-        updateGlobalActionBtn(isAudio ? "Listen Now" : "Watch Now");
-        document.getElementById('section-title').innerText = title;
-        const catWatchNow = document.getElementById('cat-watch-now');
-        if (catWatchNow) catWatchNow.onclick = triggerWatchNow;
-        return;
-    }
     const container = document.getElementById('grid-container');
     const hero = document.getElementById('hero-section');
     container.className = '';
@@ -419,12 +408,14 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
 
     try {
         const data = await Api.fetchCategory(categoryKey, State.getLang());
+        if (requestId !== viewRequestId) return;
         let subcategoryResults = [];
         if (data.category?.subcategories?.length > 0) {
             const subFetches = data.category.subcategories.map(sub =>
                 Api.fetchCategory(sub.key, State.getLang())
             );
             subcategoryResults = await Promise.all(subFetches);
+            if (requestId !== viewRequestId) return;
         }
 
         container.innerHTML = "";
@@ -438,13 +429,13 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
 
         hero.innerHTML = `
             <div id="category-hero">
-                <img src="${heroThumb}">
+                <img src="${escapeHtml(heroThumb)}">
                 <div class="hero-info">
-                    <h1>${title}</h1>
-                    <p>${data.category?.description || ''}</p>
+                    <h1>${escapeHtml(title)}</h1>
+                    <p>${escapeHtml(data.category?.description || '')}</p>
                     <div class="watch-now-btn hero-btn" tabindex="7" id="cat-watch-now">
                         <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7l7 4z"/></svg>
-                        <span>${actionText}</span>
+                        <span>${escapeHtml(actionText)}</span>
                     </div>
                 </div>
             </div>
@@ -510,10 +501,9 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
 
         Nav.refreshSpatialNavigation();
         UI.observeLazyImages();
-        const state = buildNavigationState();
-        if (state) viewCache.set(viewKey, state);
     } catch (err) {
-        console.error("Content load failed", err);
+        if (requestId !== viewRequestId) return;
+        logError('content', 'Content load failed', err, { language: State.getLang(), categoryKey });
         showErrorState(container, "Unable to load this content. Check your connection.", () => loadContentPage(categoryKey, title, isAudio));
     }
 }
@@ -528,11 +518,15 @@ async function triggerWatchNow() {
         try {
             const data = await Api.fetchCategory('LatestVideos', State.getLang());
             const newPlaylist = data.category?.media || [];
+            if (!newPlaylist.length) {
+                showToast("No playable media available right now.");
+                return;
+            }
             const newIndex = Math.floor(Math.random() * newPlaylist.length);
             State.setPlaylist(newPlaylist, newIndex);
             Playback.playNext();
         } catch (err) {
-            console.error(err);
+            logError('watch-now', 'Could not load latest videos', err, { language: State.getLang() });
             showToast("Could not load. Try again.");
         }
     }
@@ -568,19 +562,19 @@ async function showLandingPage(item, i, isAudio, options) {
         <div class="video-landing-container">
             <div class="video-details-top">
                 <div class="video-info-text">
-                    <h1>${item.title}</h1>
+                    <h1>${escapeHtml(item.title)}</h1>
                     <div class="landing-buttons">
                         <button class="landing-btn play-btn" id="btn-1" tabindex="20">${hasProgress ? 'Resume' : 'Play'}</button>
                         <button class="landing-btn secondary-btn" id="btn-2" tabindex="21">Play All</button>
                     </div>
-                    <p class="video-desc">${item.description || ''}</p>
+                    <p class="video-desc">${escapeHtml(item.description || '')}</p>
                 </div>
                 <div class="video-preview-img ${isAudio ? 'audio-preview' : ''}">
-                    <img src="${previewImg}">
+                    <img src="${escapeHtml(previewImg)}">
                 </div>
             </div>
             <div class="media-shelf-section">
-                <h2 class="media-shelf-title">${item.rowTitle || document.getElementById('section-title')?.innerText}</h2>
+                <h2 class="media-shelf-title">${escapeHtml(item.rowTitle || document.getElementById('section-title')?.innerText)}</h2>
                 <div class="media-row-wrapper" id="landing-row-items"></div>
             </div>
         </div>
@@ -635,6 +629,7 @@ function showSearchModal() {
     const searchInput = document.getElementById('search-input');
     const searchCloseBtn = document.getElementById('search-close-btn');
 
+    lastFocusedBeforeSearch = document.activeElement;
     modal.classList.remove('hidden');
     document.getElementById('search-results').innerHTML = '<p class="search-placeholder">Enter a search term, then press <strong>Enter</strong> to see results and use the remote.</p>';
     void modal.offsetWidth;
@@ -658,6 +653,14 @@ function hideSearchModal() {
     const input = document.getElementById('search-input');
     if (input) input.value = '';
     document.querySelectorAll('#search-modal .search-focus-ring').forEach(el => el.classList.remove('search-focus-ring'));
+    const fallback = document.getElementById('search-btn');
+    const restoreTarget = (lastFocusedBeforeSearch && typeof lastFocusedBeforeSearch.focus === 'function')
+        ? lastFocusedBeforeSearch
+        : fallback;
+    if (restoreTarget && typeof restoreTarget.focus === 'function') {
+        restoreTarget.focus();
+    }
+    lastFocusedBeforeSearch = null;
 }
 
 function setSearchModalFocusRing(element) {
@@ -674,6 +677,7 @@ function updateSearchInputDataSnUp() {
 }
 
 async function performSearch(query) {
+    const requestId = ++searchRequestId;
     const resultsPane = document.getElementById('search-results');
     const filter = document.querySelector('.search-filter-btn.active')?.getAttribute('data-filter') || 'all';
     const trimmed = query.trim().replace(/\s+/g, ' ');
@@ -682,16 +686,18 @@ async function performSearch(query) {
     resultsPane.innerHTML = '<p class="search-loading">Searching...</p>';
     try {
         const results = await Api.fetchSearch(trimmed, State.getLang(), filter);
+        if (requestId !== searchRequestId) return;
         resultsPane.innerHTML = "";
         if (results.length > 0) {
             displaySearchResults(results);
         } else {
-            resultsPane.innerHTML = `<p class="search-no-results">No media results found for "${trimmed}"</p>`;
+            resultsPane.innerHTML = `<p class="search-no-results">No media results found for "${escapeHtml(trimmed)}"</p>`;
         }
         updateSearchInputDataSnUp();
         if (typeof SpatialNavigation !== 'undefined') SpatialNavigation.makeFocusable();
     } catch (err) {
-        console.error("Search error", err);
+        if (requestId !== searchRequestId) return;
+        logError('search', 'Search error', err, { language: State.getLang(), query: trimmed, filter });
         resultsPane.innerHTML = `
             <p class="search-no-results">Something went wrong. Please try again.</p>
             <button type="button" class="error-retry-btn" tabindex="60" style="margin-top: 16px;">Try again</button>
@@ -786,6 +792,21 @@ window.onload = () => {
             } else {
                 navigateBack();
             }
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        const playerContainer = document.getElementById('player-container');
+        const player = document.getElementById('player');
+        const isPlayerOpen = playerContainer && !playerContainer.classList.contains('hidden');
+        if (document.hidden) {
+            if (isPlayerOpen && player && !player.paused) {
+                player.pause();
+            }
+            return;
+        }
+        if (!document.hidden && typeof SpatialNavigation !== 'undefined') {
+            SpatialNavigation.focus();
         }
     });
 
@@ -922,88 +943,61 @@ window.onload = () => {
         Settings.openSettingsModal();
     };
 
-    const backKeyHandler = (e) => {
-        if (window.__settingsLanguageSearchActive) return;
-        if (e.key !== "Escape" && e.keyCode !== 461) return;
-        
-        const searchModal = document.getElementById('search-modal');
-        if (searchModal && !searchModal.classList.contains('hidden')) {
-            e.preventDefault();
-            e.stopPropagation();
-            hideSearchModal();
-            return;
-        }
-        
-        const settingsModal = document.getElementById('settings-modal');
-        if (settingsModal && !settingsModal.classList.contains('hidden')) {
-            const active = document.activeElement;
-            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-                return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            Settings.closeSettingsModal();
-            return;
-        }
-
-        const playerContainer = document.getElementById('player-container');
-        if (playerContainer && !playerContainer.classList.contains('hidden')) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            Playback.stopVideo();
-            return;
-        }
-        if (Nav.navigationStack.length > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            navigateBack();
-        }
-    };
-    document.addEventListener('keydown', backKeyHandler, true);
-    document.body.addEventListener('keydown', backKeyHandler, true);
-    window.addEventListener('keydown', backKeyHandler, true);
-
-    // When search modal is open, if focus is outside the modal (e.g. still on grid), trap arrow keys
-    // and move focus into the modal so we don't navigate through background videos.
-    document.addEventListener('keydown', (e) => {
-        if (window.__settingsLanguageSearchActive) return;
-        const searchModal = document.getElementById('search-modal');
-        if (!searchModal || searchModal.classList.contains('hidden')) return;
-        const key = e.keyCode || e.which;
-        if (key !== 37 && key !== 38 && key !== 39 && key !== 40) return;
-        const active = document.activeElement;
-        if (!active || !searchModal.contains(active)) {
-            e.preventDefault();
-            e.stopPropagation();
-            const closeBtn = document.getElementById('search-close-btn');
-            if (closeBtn) closeBtn.focus();
-        }
-    }, true);
-
-    document.addEventListener('mouseover', (e) => {
-        if (window.__settingsLanguageSearchActive) return;
-        // Fix: Do not steal focus if search modal is open
-        if (!document.getElementById('search-modal').classList.contains('hidden')) return;
-        if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
-        
-        const target = e.target.closest('.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, .search-filter-btn, .search-close-btn, .audio-pause-button');
-        if (target && target.tabIndex >= 0) target.focus();
-    }, true);
-
-    document.addEventListener('cursorStateChange', (event) => {
-        if (window.__settingsLanguageSearchActive) return;
-        const searchModal = document.getElementById('search-modal');
-        if (searchModal && !searchModal.classList.contains('hidden')) return;
-        if (event.detail && !event.detail.visibility && typeof SpatialNavigation !== 'undefined') {
-            SpatialNavigation.focus();
-        }
-    }, false);
-
-    document.addEventListener('keydown', (e) => {
+    const globalKeydownHandler = (e) => {
         if (window.__settingsLanguageSearchActive) return;
         const keyCode = e.keyCode || e.which;
+        const isBack = e.key === "Escape" || keyCode === 461;
+        const searchModal = document.getElementById('search-modal');
+        const settingsModal = document.getElementById('settings-modal');
         const playerContainer = document.getElementById('player-container');
+
+        if (isBack) {
+            if (searchModal && !searchModal.classList.contains('hidden')) {
+                e.preventDefault();
+                e.stopPropagation();
+                hideSearchModal();
+                return;
+            }
+
+            if (settingsModal && !settingsModal.classList.contains('hidden')) {
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                Settings.closeSettingsModal();
+                return;
+            }
+
+            if (playerContainer && !playerContainer.classList.contains('hidden')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                Playback.stopVideo();
+                return;
+            }
+
+            if (Nav.navigationStack.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                navigateBack();
+            }
+            return;
+        }
+
+        // When search modal is open and focus is outside it, trap arrows and move focus in.
+        if (searchModal && !searchModal.classList.contains('hidden')) {
+            if (keyCode === 37 || keyCode === 38 || keyCode === 39 || keyCode === 40) {
+                const active = document.activeElement;
+                if (!active || !searchModal.contains(active)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const closeBtn = document.getElementById('search-close-btn');
+                    if (closeBtn) closeBtn.focus();
+                    return;
+                }
+            }
+        }
+
         if (playerContainer && !playerContainer.classList.contains('hidden')) {
             if (keyCode === 37 || keyCode === 39) {
                 if (Playback.handleVideoArrowKey && Playback.handleVideoArrowKey(keyCode)) {
@@ -1027,6 +1021,7 @@ window.onload = () => {
                 }
             }
         }
+
         if (keyCode === 13) {
             // Respect element-level handlers that already consumed Enter.
             if (e.defaultPrevented) return;
@@ -1041,5 +1036,26 @@ window.onload = () => {
                 focused.click();
             }
         }
+    };
+    window.addEventListener('keydown', globalKeydownHandler, true);
+
+    document.addEventListener('mouseover', (e) => {
+        if (window.__settingsLanguageSearchActive) return;
+        // Fix: Do not steal focus if search modal is open
+        if (!document.getElementById('search-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
+        
+        const target = e.target.closest('.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, .search-filter-btn, .search-close-btn, .audio-pause-button');
+        if (target && target.tabIndex >= 0) target.focus();
+    }, true);
+
+    document.addEventListener('cursorStateChange', (event) => {
+        if (window.__settingsLanguageSearchActive) return;
+        const searchModal = document.getElementById('search-modal');
+        if (searchModal && !searchModal.classList.contains('hidden')) return;
+        if (event.detail && !event.detail.visibility && typeof SpatialNavigation !== 'undefined') {
+            SpatialNavigation.focus();
+        }
     }, false);
+
 };

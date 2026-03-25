@@ -1,6 +1,6 @@
-import { fetchAllLanguages } from './languages.js';
-import * as State from './state.js';
-import * as Nav from './navigation.js';
+import { fetchAllLanguages } from '../api/languages.js';
+import * as State from '../core/state.js';
+import * as Nav from '../core/navigation.js';
 import * as UI from './ui.js';
 
 let allLanguagesCache = [];

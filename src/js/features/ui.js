@@ -37,6 +37,20 @@ export const ICONS = {
 
 const PLACEHOLDER_IMG = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
+function escapeHtml(value) {
+    if (value == null) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value);
+}
+
 /**
  * Single fallback chain for media thumbnails. Use everywhere (cards, landing, now playing).
  * @param {object} item - Media item with image/images
@@ -68,23 +82,26 @@ export function createMediaCard(item, index, isAudio, onClick, baseTabIndex) {
     const card = document.createElement('div');
     card.className = `media-item-card ${isAudio ? 'audio-card' : ''}`;
     card.tabIndex = baseTabIndex !== undefined ? baseTabIndex + index : 100 + index;
-    card.id = `media-card-${item.guid || (baseTabIndex + index)}`;
+    const fallbackId = item.lank || `fallback-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+    card.id = `media-card-${item.guid || fallbackId}`;
     card.setAttribute('data-item-guid', item.guid || item.lank || '');
     card.setAttribute('data-item-index', String(index));
     card.setAttribute('data-is-audio', isAudio ? 'true' : 'false');
 
     const thumb = getMediaThumbnailUrl(item, isAudio);
-    const duration = item.durationFormattedHHMM || item.duration || "";
+    const duration = escapeHtml(item.durationFormattedHHMM || item.duration || "");
+    const title = escapeHtml(item.title || '');
+    const safeThumb = escapeAttr(thumb);
 
     card.innerHTML = `
         <div class="thumbnail-container loading">
-            <img class="lazy-load" data-src="${thumb}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'">
+            <img class="lazy-load" data-src="${safeThumb}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'">
             <div class="bottom-overlay">
                 ${isAudio ? ICONS.AUDIO : ICONS.VIDEO}
                 ${duration ? `<span class="duration-text">${duration}</span>` : ''}
             </div>
         </div>
-        <div class="media-item-card-title">${item.title}</div>
+        <div class="media-item-card-title">${title}</div>
     `;
     card.onclick = () => onClick(item, index, isAudio);
     return card;
@@ -124,7 +141,7 @@ export function renderMediaRow(title, items, container, options = {}, rowIndex =
     const section = document.createElement('div');
     section.className = "media-shelf-section" + (featured ? " featured-row" : "");
     section.setAttribute('data-row-title', title);
-    section.innerHTML = `<h2 class="media-shelf-title">${title}</h2>`;
+    section.innerHTML = `<h2 class="media-shelf-title">${escapeHtml(title)}</h2>`;
 
     const wrapper = document.createElement('div');
     wrapper.className = "media-row-wrapper";
@@ -180,7 +197,7 @@ export function renderCategoryGrid(categories, container, onClick) {
         div.setAttribute('data-key', cat.key);
         const img = cat.images?.pnr?.lg || cat.images?.wss?.sm || cat.images?.lsq?.lg;
         const imgSrc = (typeof img === 'string') ? img : (img?.url || "");
-        div.innerHTML = `<div class="thumbnail-container loading"><img class="lazy-load" data-src="${imgSrc}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'"></div><p>${cat.name}</p>`;
+        div.innerHTML = `<div class="thumbnail-container loading"><img class="lazy-load" data-src="${escapeAttr(imgSrc)}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'"></div><p>${escapeHtml(cat.name)}</p>`;
         div.onclick = () => onClick(cat);
         container.appendChild(div);
     });
@@ -198,9 +215,9 @@ export function createCategoryCard(category, index, onClick) {
 
     card.innerHTML = `
         <div class="thumbnail-container loading">
-            <img class="lazy-load" data-src="${thumb}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'">
+            <img class="lazy-load" data-src="${escapeAttr(thumb)}" src="${PLACEHOLDER_IMG}" onerror="this.src='icon.png'">
         </div>
-        <div class="media-item-card-title">${category.name}</div>
+        <div class="media-item-card-title">${escapeHtml(category.name)}</div>
     `;
 
     card.onclick = () => onClick(category);

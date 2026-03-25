@@ -1,10 +1,33 @@
 import * as Player from './player.js';
 import * as UI from './ui.js';
-import * as Nav from './navigation.js';
-import * as State from './state.js';
-import * as Api from './api.js';
+import * as Nav from '../core/navigation.js';
+import * as State from '../core/state.js';
+import * as Api from '../api/api.js';
 
 let videoControlHandler = null;
+let audioBackHandler = null;
+
+function escapeHtml(value) {
+    if (value == null) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function ensureVideoLoadingCover(playerContainer) {
+    if (!playerContainer) return null;
+    let cover = playerContainer.querySelector('.video-loading-cover');
+    if (!cover) {
+        cover = document.createElement('div');
+        cover.className = 'video-loading-cover';
+        playerContainer.appendChild(cover);
+    }
+    cover.classList.remove('hidden');
+    return cover;
+}
 
 function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
     const playerContainer = document.getElementById('player-container');
@@ -26,11 +49,15 @@ function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
         Player.setupSubtitles(player, stream.subtitles, State.getLang());
     }
 
+    const loadingCover = ensureVideoLoadingCover(playerContainer);
     playerContainer.classList.remove('hidden');
     playerContainer.querySelector('.playback-error-overlay')?.remove();
     history.pushState({ video: true }, '', window.location.href);
     player.src = stream.url;
     player.onerror = () => showPlaybackError(playerContainer);
+    player.onloadeddata = () => {
+        loadingCover?.classList.add('hidden');
+    };
     player.onloadedmetadata = () => {
         playerContainer.querySelector('.playback-error-overlay')?.remove();
         if (startTime > 0) player.currentTime = startTime;
@@ -97,10 +124,10 @@ function playAudio(item, startTime = 0, playNextOnEnd = true) {
         <div class="audio-player-ui">
             <div class="audio-player-now-playing">
                 <div class="audio-player-thumbnail">
-                    <img src="${thumb}" alt="${item.title}" onerror="this.src='icon.png'">
+                    <img src="${escapeHtml(thumb)}" alt="${escapeHtml(item.title)}" onerror="this.src='icon.png'">
                 </div>
                 <div class="audio-player-info">
-                    <h2 class="audio-player-title">${item.title}</h2>
+                    <h2 class="audio-player-title">${escapeHtml(item.title)}</h2>
                     <button id="audio-pause-btn" class="audio-pause-button" tabindex="50">
                         <svg viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
                         <span>Pause</span>
@@ -115,7 +142,7 @@ function playAudio(item, startTime = 0, playNextOnEnd = true) {
                 </div>
             </div>
             <div class="audio-player-playlist-section">
-                <h2 class="audio-playlist-title">${rowTitle}</h2>
+                <h2 class="audio-playlist-title">${escapeHtml(rowTitle)}</h2>
                 <div class="audio-playlist-row" id="audio-playlist-items"></div>
             </div>
         </div>
@@ -222,17 +249,19 @@ function playAudio(item, startTime = 0, playNextOnEnd = true) {
     history.pushState({ video: true }, '', window.location.href);
     Nav.registerSpatialNavigationForNewContent();
 
-    const backHandler = (e) => {
+    if (audioBackHandler) {
+        playerContainer.removeEventListener('keydown', audioBackHandler, true);
+    }
+    audioBackHandler = (e) => {
         if (e.key === "Escape" || e.keyCode === 461) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             stopVideo();
-            playerContainer.removeEventListener('keydown', backHandler, true);
             return false;
         }
     };
-    playerContainer.addEventListener('keydown', backHandler, true);
+    playerContainer.addEventListener('keydown', audioBackHandler, true);
     playerContainer.focus();
     setTimeout(() => {
         const pb = document.getElementById('audio-pause-btn');
@@ -259,6 +288,10 @@ function stopVideo() {
         playerContainer.removeEventListener('keydown', videoControlHandler, true);
         videoControlHandler = null;
     }
+    if (playerContainer && audioBackHandler) {
+        playerContainer.removeEventListener('keydown', audioBackHandler, true);
+        audioBackHandler = null;
+    }
     const player = playerContainer?.querySelector('#player') || document.getElementById('player');
     if (player) {
         player.pause();
@@ -270,7 +303,7 @@ function stopVideo() {
     }
     if (playerContainer) {
         playerContainer.classList.add('hidden');
-        playerContainer.innerHTML = '<video id="player" autoplay controls tabindex="0" controlsList="nodownload noplaybackrate nofullscreen" disablePictureInPicture disableRemotePlayback></video>';
+        playerContainer.innerHTML = '<video id="player" autoplay controls tabindex="0" controlsList="nodownload noplaybackrate nofullscreen" disablePictureInPicture disableRemotePlayback></video><div class="video-loading-cover hidden"></div>';
         playerContainer.blur();
     }
 }
@@ -281,6 +314,10 @@ async function playNext() {
         return;
     }
     let item = State.advancePlaylist();
+    if (!item) {
+        stopVideo();
+        return;
+    }
     if (item.lank && !item.files?.length) {
         const full = await Api.fetchMediaByLank(item.lank, State.getLang());
         if (full) {
