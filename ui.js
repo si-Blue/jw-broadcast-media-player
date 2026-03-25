@@ -21,7 +21,7 @@ const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
             }
         }
     });
-});
+}, { rootMargin: "2000px" });
 
 export function observeLazyImages() {
     const lazyImages = document.querySelectorAll('img.lazy-load');
@@ -46,18 +46,18 @@ const PLACEHOLDER_IMG = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAA
 export function getMediaThumbnailUrl(item, isAudio) {
     const candidates = isAudio
         ? [
-            item?.image?.url,
             item?.images?.sqr?.lg,
             item?.images?.sqr?.md,
+            item?.image?.url,
             item?.images?.lsq?.lg,
             item?.images?.wss?.sm,
             item?.images?.cvr?.lg,
             item?.images?.cvr?.md
         ]
         : [
-            item?.image?.url,
             item?.images?.wss?.lg,
-            item?.images?.wss?.sm
+            item?.images?.wss?.sm,
+            item?.image?.url
         ];
     const raw = candidates.find(v => v != null);
     const url = (typeof raw === 'string') ? raw : (raw?.url ?? '');

@@ -79,7 +79,7 @@ export async function fetchWithCache(url, options = {}) {
 async function fetchSearchByType(query, lang, typePath, token) {
     const trimmed = query.trim().replace(/\s+/g, ' ');
     const finalQuery = (trimmed.includes(' ') && !trimmed.startsWith('"')) ? `"${trimmed}"` : trimmed;
-    const url = `https://b.jw-cdn.org/apis/search/results/${lang}/${typePath}?sort=rel&q=${encodeURIComponent(finalQuery)}`;
+    const url = `https://b.jw-cdn.org/apis/search/results/${lang}/${typePath}?sort=rel&q=${encodeURIComponent(finalQuery)}&clientType=tv`;
 
     const response = await fetch(url, {
         headers: {
