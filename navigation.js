@@ -1,8 +1,8 @@
 // navigation.js
 export let navigationStack = [];
 
-// Single section: all focusable elements (original setup – horizontal scroll works within one section)
-const SPATIAL_SELECTORS = '.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, .search-filter-btn, .search-close-btn, #search-bar-trigger, .audio-pause-button, .settings-close-btn, .settings-save-btn, .settings-select, .settings-toggle, #language-select, #subtitles-toggle, #resolution-select, .error-retry-btn, .error-close-btn';
+// Main content only; search modal has its own section (search-modal) with restrict 'self-only'
+const SPATIAL_SELECTORS = '.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, #search-bar-trigger, .audio-pause-button, .settings-close-btn, .settings-save-btn, .settings-select, .settings-toggle, #language-select, #subtitles-toggle, #resolution-select, .error-retry-btn, .error-close-btn';
 const SPATIAL_SELECTORS_NEW = '.media-item-card, .video-card, .action-card-blue, .landing-btn, .audio-pause-button, .audio-progress-track, .error-retry-btn, .error-close-btn';
 
 /**
@@ -64,18 +64,35 @@ function setupScrollIntoViewOnFocus() {
     }, false);
 }
 
+export function disableMainNavigation() {
+    if (typeof SpatialNavigation !== 'undefined') {
+        SpatialNavigation.pause(); // Stop processing all navigation
+    }
+}
+
+export function enableMainNavigation() {
+    if (typeof SpatialNavigation !== 'undefined') {
+        SpatialNavigation.resume(); // Resume normal navigation
+    }
+}
+
+const SEARCH_MODAL_SELECTORS = '#search-modal #search-input, #search-modal .search-close-btn, #search-modal .search-filter-btn, #search-modal .media-item-card, #search-modal .error-retry-btn';
+
 export function initializeSpatialNavigation() {
     if (typeof SpatialNavigation !== 'undefined') {
-        document.getElementById('search-input')?.blur();
         setupScrollIntoViewOnFocus();
         SpatialNavigation.init();
+        SpatialNavigation.add('search-modal', {
+            selector: SEARCH_MODAL_SELECTORS,
+            restrict: 'self-only',
+            enterTo: 'default-element',
+        });
         SpatialNavigation.add({
             selector: SPATIAL_SELECTORS,
             enterTo: 'default-element',
         });
         SpatialNavigation.makeFocusable();
         setTimeout(() => {
-            document.getElementById('search-input')?.blur();
             SpatialNavigation.focus();
         }, 100);
     }

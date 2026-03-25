@@ -3,6 +3,7 @@ import * as Nav from './navigation.js';
 import * as UI from './ui.js';
 import * as State from './state.js';
 import * as Playback from './playback.js';
+import * as Settings from './settings.js';
 
 let currentSearchFilter = 'all';
 
@@ -551,6 +552,7 @@ async function showLandingPage(item, i, isAudio, options) {
             item.files = full.files;
             if (full.guid != null) item.guid = full.guid;
             if (full.description != null) item.description = full.description;
+            if (full.images) item.images = full.images;
         }
     }
     hero.innerHTML = "";
@@ -631,16 +633,44 @@ async function showLandingPage(item, i, isAudio, options) {
 function showSearchModal() {
     const modal = document.getElementById('search-modal');
     const searchInput = document.getElementById('search-input');
+    const searchCloseBtn = document.getElementById('search-close-btn');
+
     modal.classList.remove('hidden');
-    document.getElementById('search-results').innerHTML = '<p class="search-placeholder">Enter a search term to find content</p>';
-    if (typeof Nav.refreshSpatialNavigation === 'function') Nav.refreshSpatialNavigation();
-    searchInput?.focus();
+    document.getElementById('search-results').innerHTML = '<p class="search-placeholder">Enter a search term, then press <strong>Enter</strong> to see results and use the remote.</p>';
+    void modal.offsetWidth;
+    updateSearchInputDataSnUp();
+
+    if (typeof SpatialNavigation !== 'undefined') {
+        // SpatialNavigation.makeFocusable(modal);
+        SpatialNavigation.makeFocusable('search-modal');
+        // Force focus into the modal so arrow keys stay in modal (search-modal section).
+        // Focus close button first; user can press Down to reach the input (data-sn-down).
+        setTimeout(() => {
+            if (searchInput) searchInput.focus();
+        }, 0);
+    } else {
+        searchInput.focus();
+    }
 }
 
 function hideSearchModal() {
     document.getElementById('search-modal').classList.add('hidden');
     const input = document.getElementById('search-input');
     if (input) input.value = '';
+    document.querySelectorAll('#search-modal .search-focus-ring').forEach(el => el.classList.remove('search-focus-ring'));
+}
+
+function setSearchModalFocusRing(element) {
+    document.querySelectorAll('#search-modal .media-item-card, #search-modal .search-filter-btn').forEach(el => {
+        el.classList.toggle('search-focus-ring', el === element);
+    });
+}
+
+function updateSearchInputDataSnUp() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+    const firstResult = document.querySelector('#search-results .media-item-card');
+    searchInput.setAttribute('data-sn-up', firstResult ? '#search-results .media-item-card' : '#search-modal .search-filter-btn');
 }
 
 async function performSearch(query) {
@@ -658,7 +688,8 @@ async function performSearch(query) {
         } else {
             resultsPane.innerHTML = `<p class="search-no-results">No media results found for "${trimmed}"</p>`;
         }
-        Nav.refreshSpatialNavigation();
+        updateSearchInputDataSnUp();
+        if (typeof SpatialNavigation !== 'undefined') SpatialNavigation.makeFocusable();
     } catch (err) {
         console.error("Search error", err);
         resultsPane.innerHTML = `
@@ -667,7 +698,8 @@ async function performSearch(query) {
         `;
         const retryBtn = resultsPane.querySelector('.error-retry-btn');
         if (retryBtn) retryBtn.onclick = () => performSearch(trimmed);
-        Nav.refreshSpatialNavigation();
+        updateSearchInputDataSnUp();
+        if (typeof SpatialNavigation !== 'undefined') SpatialNavigation.makeFocusable();
     }
 }
 
@@ -721,6 +753,7 @@ window.navigateBack = function navigateBack() {
 window.onload = () => {
     document.getElementById('search-input')?.blur();
     Nav.initializeSpatialNavigation();
+    Settings.initSettings();
 
     window.addEventListener('popstate', (event) => {
         const playerContainer = document.getElementById('player-container');
@@ -784,6 +817,12 @@ window.onload = () => {
         };
     });
 
+    // --- Settings Modal Trigger ---
+    // Instead of: window.location.href = 'settings.html';
+    document.getElementById('settings-btn').onclick = () => {
+        Settings.openSettingsModal();
+    };
+
     document.getElementById('search-btn').onclick = showSearchModal;
     document.getElementById('search-close-btn').onclick = hideSearchModal;
 
@@ -795,22 +834,64 @@ window.onload = () => {
         if (query.length >= 2) {
             searchTimeout = setTimeout(() => performSearch(query), 500);
         } else {
-            document.getElementById('search-results').innerHTML = '<p class="search-placeholder">Enter a search term to find content</p>';
+            document.getElementById('search-results').innerHTML = '<p class="search-placeholder">Enter a search term, then press <strong>Enter</strong> to see results and use the remote.</p>';
         }
     });
+    searchInput?.addEventListener('blur', () => {
+        const modal = document.getElementById('search-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        setTimeout(() => {
+            const active = document.activeElement;
+            if (!active || !modal.contains(active)) moveFocusToSearchResults();
+        }, 0);
+    });
+    function moveFocusToSearchResults() {
+        const firstResult = document.querySelector('#search-results .media-item-card');
+        const firstFilter = document.querySelector('#search-modal .search-filter-btn');
+        const toFocus = firstResult || firstFilter;
+        if (!toFocus) return;
+        if (typeof SpatialNavigation !== 'undefined') SpatialNavigation.focus(toFocus);
+        toFocus.focus();
+        requestAnimationFrame(() => setSearchModalFocusRing(toFocus));
+        setTimeout(() => setSearchModalFocusRing(toFocus), 100);
+    }
+
+    function updateSearchModalFocusRingFromElement(el) {
+        if (!el || !document.getElementById('search-modal')?.contains(el)) return;
+        const card = el.closest('#search-modal .media-item-card');
+        if (card) {
+            setSearchModalFocusRing(card);
+            return;
+        }
+        const filterBtn = el.closest('#search-modal .search-filter-btn');
+        if (filterBtn) {
+            setSearchModalFocusRing(filterBtn);
+            return;
+        }
+        setSearchModalFocusRing(null);
+    }
+
+    const searchModal = document.getElementById('search-modal');
+    if (searchModal) {
+        searchModal.addEventListener('focusin', (e) => updateSearchModalFocusRingFromElement(e.target));
+    }
+    document.addEventListener('sn:focused', (e) => {
+        const el = e && e.target;
+        if (el) updateSearchModalFocusRingFromElement(el);
+    }, false);
+
     searchInput?.addEventListener('keydown', (e) => {
-        if (e.keyCode === 13 || e.key === 'Enter') {
+        if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
             e.stopPropagation();
             searchInput.blur();
-            const firstFilter = document.querySelector('.search-filter-btn');
-            const firstResult = document.querySelector('#search-results .media-item-card');
-            const next = firstResult || firstFilter || document.getElementById('search-close-btn');
-            if (next) next.focus();
-            if (typeof Nav.refreshSpatialNavigation === 'function') Nav.refreshSpatialNavigation();
+            moveFocusToSearchResults();
         }
-    });
-
+        // Up (38) is not handled: on webOS the platform defers JS until the next keypress
+        // when the keyboard is open, so Up cannot close the keyboard and move focus in one go.
+        // Users press Enter to close the keyboard and move to results (see placeholder hint).
+    }, true);
+    
     const searchBarTrigger = document.getElementById('search-bar-trigger');
     if (searchBarTrigger) {
         searchBarTrigger.addEventListener('click', (e) => {
@@ -838,11 +919,13 @@ window.onload = () => {
     });
 
     document.getElementById('settings-btn').onclick = () => {
-        window.location.href = 'settings.html';
+        Settings.openSettingsModal();
     };
 
     const backKeyHandler = (e) => {
+        if (window.__settingsLanguageSearchActive) return;
         if (e.key !== "Escape" && e.keyCode !== 461) return;
+        
         const searchModal = document.getElementById('search-modal');
         if (searchModal && !searchModal.classList.contains('hidden')) {
             e.preventDefault();
@@ -850,6 +933,19 @@ window.onload = () => {
             hideSearchModal();
             return;
         }
+        
+        const settingsModal = document.getElementById('settings-modal');
+        if (settingsModal && !settingsModal.classList.contains('hidden')) {
+            const active = document.activeElement;
+            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            Settings.closeSettingsModal();
+            return;
+        }
+
         const playerContainer = document.getElementById('player-container');
         if (playerContainer && !playerContainer.classList.contains('hidden')) {
             e.preventDefault();
@@ -868,18 +964,44 @@ window.onload = () => {
     document.body.addEventListener('keydown', backKeyHandler, true);
     window.addEventListener('keydown', backKeyHandler, true);
 
+    // When search modal is open, if focus is outside the modal (e.g. still on grid), trap arrow keys
+    // and move focus into the modal so we don't navigate through background videos.
+    document.addEventListener('keydown', (e) => {
+        if (window.__settingsLanguageSearchActive) return;
+        const searchModal = document.getElementById('search-modal');
+        if (!searchModal || searchModal.classList.contains('hidden')) return;
+        const key = e.keyCode || e.which;
+        if (key !== 37 && key !== 38 && key !== 39 && key !== 40) return;
+        const active = document.activeElement;
+        if (!active || !searchModal.contains(active)) {
+            e.preventDefault();
+            e.stopPropagation();
+            const closeBtn = document.getElementById('search-close-btn');
+            if (closeBtn) closeBtn.focus();
+        }
+    }, true);
+
     document.addEventListener('mouseover', (e) => {
+        if (window.__settingsLanguageSearchActive) return;
+        // Fix: Do not steal focus if search modal is open
+        if (!document.getElementById('search-modal').classList.contains('hidden')) return;
+        if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
+        
         const target = e.target.closest('.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, .search-filter-btn, .search-close-btn, .audio-pause-button');
         if (target && target.tabIndex >= 0) target.focus();
     }, true);
 
     document.addEventListener('cursorStateChange', (event) => {
+        if (window.__settingsLanguageSearchActive) return;
+        const searchModal = document.getElementById('search-modal');
+        if (searchModal && !searchModal.classList.contains('hidden')) return;
         if (event.detail && !event.detail.visibility && typeof SpatialNavigation !== 'undefined') {
             SpatialNavigation.focus();
         }
     }, false);
 
     document.addEventListener('keydown', (e) => {
+        if (window.__settingsLanguageSearchActive) return;
         const keyCode = e.keyCode || e.which;
         const playerContainer = document.getElementById('player-container');
         if (playerContainer && !playerContainer.classList.contains('hidden')) {
@@ -906,6 +1028,8 @@ window.onload = () => {
             }
         }
         if (keyCode === 13) {
+            // Respect element-level handlers that already consumed Enter.
+            if (e.defaultPrevented) return;
             const focused = document.activeElement;
             if (focused?.tagName === 'SELECT' || focused?.tagName === 'TEXTAREA') return;
             if (focused?.tagName === 'INPUT' && focused.type !== 'button' && focused.type !== 'submit') return;

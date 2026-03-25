@@ -45,24 +45,76 @@
         <div class="search-modal-content">
             <div class="search-header">
                 <h2>Search</h2>
-                <button id="search-close-btn" class="search-close-btn" tabindex="11">×</button>
+                <button id="search-close-btn" class="search-close-btn" tabindex="11" data-sn-down="#search-input">×</button>
             </div>
             <div class="search-input-container">
-                <button type="button" class="search-bar-trigger" id="search-bar-trigger" tabindex="10" aria-label="Search – press Enter to type"></button>
-                <input type="text" id="search-input" placeholder="Search..." tabindex="-1" autocomplete="off" aria-label="Search">
+                <!-- <button type="button" class="search-bar-trigger" id="search-bar-trigger" tabindex="10" aria-label="Search – press Enter to type"></button> -->
+                <input type="text" id="search-input" placeholder="Search..." tabindex="0" autocomplete="off" aria-label="Search" data-sn-up="#search-close-btn" data-sn-down="#search-modal .search-filter-btn">
             </div>
             <div class="search-filters">
-                <button class="search-filter-btn active" data-filter="all" tabindex="12">All</button>
+                <button class="search-filter-btn active" data-filter="all" tabindex="12" data-sn-up="#search-input">All</button>
                 <button class="search-filter-btn" data-filter="videos" tabindex="13">Videos</button>
                 <button class="search-filter-btn" data-filter="audio" tabindex="14">Audio</button>
             </div>
             <div id="search-results" class="search-results">
-                <p class="search-placeholder">Enter a search term to find content</p>
+                <p class="search-placeholder">Enter a search term, then press <strong>Enter</strong> to see results and use the remote.</p>
             </div>
         </div>
     </div>
 
-    
+    <div id="settings-modal" class="hidden">
+        <div class="settings-modal-content">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="settings-close-btn" tabindex="300">&times;</button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-list">
+                    <button type="button" class="settings-list-row" id="language-row" tabindex="301" aria-expanded="false" aria-haspopup="listbox">
+                    <span class="settings-row-label">Language</span>
+                        <span class="settings-row-value"><span id="language-field-value">Loading…</span> <span class="settings-row-arrow" aria-hidden="true">&gt;</span></span>
+                    </button>
+                    <button type="button" class="settings-list-row settings-row-toggle" id="subtitles-row" tabindex="302">
+                        <span class="settings-row-label">Display subtitles when available</span>
+                        <span class="settings-row-value" id="subtitles-value">On</span>
+                    </button>
+                    <button type="button" class="settings-list-row" id="resolution-row" tabindex="303" aria-expanded="false" aria-haspopup="listbox">
+                        <span class="settings-row-label">Preferred Video Resolution</span>
+                        <span class="settings-row-value"><span id="resolution-display-value">1080p</span> <span class="settings-row-arrow" aria-hidden="true">&gt;</span></span>
+                    </button>
+                </div>
+
+                <div class="language-picker-section hidden" id="language-picker-section">
+                    <div class="language-picker-expanded">
+                        <div class="language-search-wrap">
+                            <button type="button" class="language-search-trigger" id="language-search-trigger" tabindex="0"></button>
+                            <input type="text" id="language-search" class="language-search-input" placeholder="Search for a language" tabindex="-1" autocomplete="off">
+                            <button type="button" class="language-search-clear" id="language-search-clear" tabindex="-1">×</button>
+                        </div>
+                        <div id="language-list" class="language-list" role="listbox"></div>
+                    </div>
+                </div>
+
+                <div class="resolution-picker-section hidden" id="resolution-picker-section">
+                    <div class="resolution-picker-list" id="resolution-picker-list" role="listbox"></div>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button id="settings-save-btn" class="settings-save-btn" tabindex="305">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden inputs for settings logic -->
+    <input type="hidden" id="language-select" value="">
+    <input type="checkbox" id="subtitles-toggle" hidden aria-hidden="true">
+    <select id="resolution-select" hidden aria-hidden="true">
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+        <option value="480p">480p</option>
+        <option value="360p">360p</option>
+        <option value="240p">240p</option>
+    </select>
 
     <script src="lib/spatial_navigation.js"></script>
     
