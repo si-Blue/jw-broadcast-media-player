@@ -2,15 +2,22 @@
   "name": "jw-broadcast-media-player-unofficial",
   "version": "1.0.0",
   "description": "JW Broadcast Media Player (Unofficial)",
-  "main": "app.js",
+  "main": "src/js/app.js",
   "scripts": {
     "package": "ares-package --no-minify .",
     "install": "ares-install com.siblue.jwmplayer_1.0.0_all.ipk",
     "launch": "ares-launch com.siblue.jwmplayer",
     "build-install-launch": "npm run package && npm run install && npm run launch",
-    "simulator": "ares-launch -s 25 -sp ..\\..\\webOS_TV_25_Simulator_1.4.3 ."
+    "simulator": "ares-launch -s 25 -sp ..\\..\\webOS_TV_25_Simulator_1.4.3 .",
+    "test": "vitest run --reporter=verbose",
+    "test:watch": "vitest"
   },
   "author": "Siblue",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/user-event": "^14.6.1",
+    "jsdom": "^29.0.1",
+    "vitest": "^4.1.1"
+  }
 }
-
