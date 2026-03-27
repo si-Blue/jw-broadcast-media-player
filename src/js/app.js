@@ -20,6 +20,93 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+/** Total duration in seconds from API fields, or null if unknown. */
+function parseMediaDurationSeconds(item) {
+    if (!item) return null;
+    const d = item.duration;
+    if (typeof d === 'number' && d > 0) return d;
+    if (typeof d === 'string' && /^\d+(\.\d+)?$/.test(d.trim())) {
+        const n = parseFloat(d);
+        return n > 0 ? n : null;
+    }
+    const hhmm = item.durationFormattedHHMM;
+    if (typeof hhmm === 'string' && hhmm.trim()) {
+        const parts = hhmm.trim().split(':').map(p => parseInt(p, 10));
+        if (parts.every(n => !Number.isNaN(n))) {
+            if (parts.length === 2) return parts[0] * 60 + parts[1];
+            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+    }
+    return null;
+}
+
+/** Resume bar + button labels from localStorage and item metadata (shared with landing + restore). */
+function computeLandingProgressUi(item) {
+    const storageKey = Playback.getProgressStorageKey(item);
+    const savedTime = storageKey ? localStorage.getItem(storageKey) : null;
+    const hasProgress = savedTime && parseFloat(savedTime) > 10;
+    const durationSec = parseMediaDurationSeconds(item);
+    const savedSec = hasProgress ? parseFloat(savedTime) : 0;
+    const showProgressBar =
+        hasProgress &&
+        durationSec != null &&
+        durationSec > 0 &&
+        savedSec > 0 &&
+        savedSec < durationSec;
+    const progressPct = showProgressBar
+        ? Math.min(100, Math.max(0, (savedSec / durationSec) * 100))
+        : 0;
+    return { storageKey, savedTime, hasProgress, showProgressBar, progressPct };
+}
+
+/** Resolve which media item the landing page is for (playlistIndex can be stale if never synced). */
+function findPlaylistItemForLanding(landingRoot) {
+    if (!State.currentPlaylist.length) return null;
+    const g = landingRoot.getAttribute('data-landing-guid');
+    const l = landingRoot.getAttribute('data-landing-lank');
+    if (g) {
+        const m = State.currentPlaylist.find(x => x.guid != null && String(x.guid) === g);
+        if (m) return m;
+    }
+    if (l) {
+        const m = State.currentPlaylist.find(x => x.lank != null && String(x.lank) === l);
+        if (m) return m;
+    }
+    const idx = Math.max(0, Math.min(State.playlistIndex, State.currentPlaylist.length - 1));
+    return State.currentPlaylist[idx] || null;
+}
+
+/**
+ * After history/stack restore, landing HTML is stale; re-sync bar + Resume label from localStorage.
+ */
+function refreshLandingPreviewFromStorage() {
+    const landing = document.querySelector('#grid-container .video-landing-container');
+    if (!landing || State.currentPlaylist.length === 0) return;
+    const item = findPlaylistItemForLanding(landing);
+    if (!item) return;
+
+    const { hasProgress, showProgressBar, progressPct } = computeLandingProgressUi(item);
+    const previewWrap = landing.querySelector('.video-preview-img');
+    if (previewWrap) {
+        let bar = previewWrap.querySelector('.landing-preview-progress');
+        if (showProgressBar) {
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.className = 'landing-preview-progress';
+                bar.setAttribute('aria-hidden', 'true');
+                bar.innerHTML = '<div class="landing-preview-progress-fill"></div>';
+                previewWrap.appendChild(bar);
+            }
+            const fill = bar.querySelector('.landing-preview-progress-fill');
+            if (fill) fill.style.width = `${progressPct}%`;
+        } else if (bar) {
+            bar.remove();
+        }
+    }
+    const btn1 = document.getElementById('btn-1');
+    if (btn1) btn1.textContent = hasProgress ? 'Resume' : 'Play';
+}
+
 /** HTML for the centered loading screen (spinner + text). Use same markup for detection. */
 const LOADING_HTML = `<div id="app-loading-spinner" class="app-loading-screen" aria-live="polite" aria-busy="true">
     <div class="app-loading-spinner-icon"></div>
@@ -147,6 +234,7 @@ function restoreNavigationState(state) {
         }
     }
     reattachEventListeners();
+    refreshLandingPreviewFromStorage();
     UI.observeLazyImages();
     Nav.refreshSpatialNavigation();
     setTimeout(() => { State.setIsRestoringState(false); }, 100);
@@ -615,19 +703,30 @@ async function showLandingPage(item, i, isAudio, options) {
             if (full.guid != null) item.guid = full.guid;
             if (full.description != null) item.description = full.description;
             if (full.images) item.images = full.images;
+            if (full.duration != null) item.duration = full.duration;
+            if (full.durationFormattedHHMM != null) item.durationFormattedHHMM = full.durationFormattedHHMM;
         }
     }
     hero.innerHTML = "";
     container.classList.remove("grid");
 
-    const storageKey = Playback.getProgressStorageKey(item);
-    const savedTime = storageKey ? localStorage.getItem(storageKey) : null;
-    const hasProgress = savedTime && parseFloat(savedTime) > 10;
+    if (State.currentPlaylist.length > 0) {
+        const safeIdx = Math.max(0, Math.min(i, State.currentPlaylist.length - 1));
+        State.setPlaylistIndex(safeIdx);
+    }
+
+    const { hasProgress, showProgressBar, progressPct } = computeLandingProgressUi(item);
 
     const previewImg = UI.getMediaThumbnailUrl(item, isAudio);
+    const progressBarHtml = showProgressBar
+        ? `<div class="landing-preview-progress" aria-hidden="true"><div class="landing-preview-progress-fill" style="width:${progressPct}%"></div></div>`
+        : '';
+
+    const guidAttr = item.guid != null ? escapeHtml(String(item.guid)) : '';
+    const lankAttr = item.lank != null ? escapeHtml(String(item.lank)) : '';
 
     container.innerHTML = `
-        <div class="video-landing-container">
+        <div class="video-landing-container" data-landing-guid="${guidAttr}" data-landing-lank="${lankAttr}">
             <div class="video-details-top">
                 <div class="video-info-text">
                     <h1>${escapeHtml(item.title)}</h1>
@@ -638,7 +737,8 @@ async function showLandingPage(item, i, isAudio, options) {
                     <p class="video-desc">${escapeHtml(item.description || '')}</p>
                 </div>
                 <div class="video-preview-img ${isAudio ? 'audio-preview' : ''}">
-                    <img src="${escapeHtml(previewImg)}">
+                    <img src="${escapeHtml(previewImg)}" alt="">
+                    ${progressBarHtml}
                 </div>
             </div>
             <div class="media-shelf-section">
@@ -656,11 +756,12 @@ async function showLandingPage(item, i, isAudio, options) {
             showToast("Playback not available. Try again or use Home/Categories.");
             return;
         }
-        const startAt = hasProgress ? parseFloat(savedTime) : 0;
+        const { storageKey: key, savedTime: st, hasProgress: hp } = computeLandingProgressUi(item);
+        const startAt = hp ? parseFloat(st) : 0;
         if (isAudio) {
             Playback.playAudio(item, startAt, false);
         } else {
-            Playback.playVideo(item.files, storageKey, startAt, false);
+            Playback.playVideo(item.files, key, startAt, false);
         }
     };
     document.getElementById('btn-2').onclick = () => {
@@ -828,6 +929,10 @@ window.onload = () => {
     document.getElementById('search-input')?.blur();
     Nav.initializeSpatialNavigation();
     Settings.initSettings();
+
+    document.addEventListener('jw-playback-closed', () => {
+        refreshLandingPreviewFromStorage();
+    });
 
     window.addEventListener('popstate', (event) => {
         const playerContainer = document.getElementById('player-container');

@@ -7,6 +7,10 @@ import * as Api from '../api/api.js';
 let videoControlHandler = null;
 let audioBackHandler = null;
 
+/** Progress keys for the active session — cleared on stop so we can flush before teardown without spurious onended wiping storage. */
+let activeVideoStorageKey = null;
+let activeAudioStorageKey = null;
+
 /** localStorage key for resume position — must match all read sites in app.js */
 export function getProgressStorageKey(item) {
     if (!item) return '';
@@ -36,6 +40,8 @@ function ensureVideoLoadingCover(playerContainer) {
 }
 
 function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
+    activeAudioStorageKey = null;
+    activeVideoStorageKey = storageKey || null;
     const playerContainer = document.getElementById('player-container');
     if (!playerContainer.querySelector('#player') || playerContainer.querySelector('.audio-player-ui')) {
         playerContainer.innerHTML = '<video id="player" autoplay controls tabindex="0" controlsList="nodownload noplaybackrate nofullscreen" disablePictureInPicture disableRemotePlayback></video>';
@@ -48,7 +54,10 @@ function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
     }
 
     const stream = Player.resolveMediaStream(files, State.userSettings.resolution);
-    if (!stream?.url) return;
+    if (!stream?.url) {
+        activeVideoStorageKey = null;
+        return;
+    }
 
     player.querySelectorAll('track').forEach(t => t.remove());
     if (State.userSettings.subtitles && stream.subtitles) {
@@ -131,6 +140,7 @@ function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
 }
 
 function playAudio(item, startTime = 0, playNextOnEnd = true) {
+    activeVideoStorageKey = null;
     const playerContainer = document.getElementById('player-container');
     const storageKey = getProgressStorageKey(item);
     const file = item.files?.find(f => f.progressiveDownloadURL)?.progressiveDownloadURL;
@@ -250,6 +260,7 @@ function playAudio(item, startTime = 0, playNextOnEnd = true) {
         if (playNextOnEnd) playNext();
         else stopVideo();
     };
+    activeAudioStorageKey = storageKey || null;
 
     const pauseBtn = document.getElementById('audio-pause-btn');
     if (pauseBtn) {
@@ -315,18 +326,41 @@ function stopVideo() {
         audioBackHandler = null;
     }
     const player = playerContainer?.querySelector('#player') || document.getElementById('player');
+    const isAudioUi = !!(playerContainer && playerContainer.querySelector('.audio-player-ui'));
     if (player) {
+        const progressKey = isAudioUi ? activeAudioStorageKey : activeVideoStorageKey;
+        if (progressKey && player.currentTime > 5 && Number.isFinite(player.currentTime)) {
+            try {
+                localStorage.setItem(progressKey, String(player.currentTime));
+            } catch (_) {}
+        }
+        player.onended = null;
+        player.ontimeupdate = null;
+        player.onerror = null;
+        player.onloadeddata = null;
+        player.onloadedmetadata = null;
+        activeVideoStorageKey = null;
+        activeAudioStorageKey = null;
         player.pause();
-        player.src = "";
+        player.removeAttribute('src');
+        try {
+            player.load();
+        } catch (_) {}
         const newPlayer = player.cloneNode(false);
         if (player.parentNode) {
             player.parentNode.replaceChild(newPlayer, player);
         }
+    } else {
+        activeVideoStorageKey = null;
+        activeAudioStorageKey = null;
     }
     if (playerContainer) {
         playerContainer.classList.add('hidden');
         playerContainer.innerHTML = '<video id="player" autoplay controls tabindex="0" controlsList="nodownload noplaybackrate nofullscreen" disablePictureInPicture disableRemotePlayback></video><div class="video-loading-cover hidden"></div>';
         playerContainer.blur();
+    }
+    if (typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('jw-playback-closed'));
     }
 }
 
