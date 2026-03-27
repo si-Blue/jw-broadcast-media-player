@@ -86,6 +86,13 @@
 
                 <div class="language-picker-section hidden" id="language-picker-section">
                     <div class="language-picker-expanded">
+                        <div class="language-current-row" id="language-current-row">
+                            <div class="language-current-bar" aria-live="polite">
+                                <span class="language-current-label">Current</span>
+                                <span class="language-current-value" id="language-current-value">—</span>
+                            </div>
+                            <div class="language-list-total" id="language-list-total" aria-hidden="true">—</div>
+                        </div>
                         <div class="language-search-wrap">
                             <button type="button" class="language-search-trigger" id="language-search-trigger" tabindex="0"></button>
                             <input type="text" id="language-search" class="language-search-input" placeholder="Search for a language" tabindex="-1" autocomplete="off">

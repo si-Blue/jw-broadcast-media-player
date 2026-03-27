@@ -58,6 +58,33 @@ function setSelectedLanguageCode(code) {
     if (hidden) hidden.value = code || 'E';
 }
 
+function sortLanguagesByName(languages) {
+    return [...languages].sort((a, b) => {
+        const an = String(a.name || a.code || '').toLowerCase();
+        const bn = String(b.name || b.code || '').toLowerCase();
+        return an.localeCompare(bn);
+    });
+}
+
+function updateLanguageCurrentBar() {
+    const el = document.getElementById('language-current-value');
+    if (el) el.textContent = getSelectedLanguageName();
+}
+
+function formatLanguageListTotal(count) {
+    if (count === 0) return 'No languages';
+    if (count === 1) return '1 language';
+    return `${count} languages`;
+}
+
+function updateLanguageListTotal() {
+    const list = document.getElementById('language-list');
+    const el = document.getElementById('language-list-total');
+    if (!list || !el) return;
+    const total = list.querySelectorAll('.language-list-item').length;
+    el.textContent = formatLanguageListTotal(total);
+}
+
 function renderLanguageList(languages, selectedCode) {
     const listEl = document.getElementById('language-list');
     if (!listEl) return;
@@ -65,9 +92,7 @@ function renderLanguageList(languages, selectedCode) {
     listEl.innerHTML = '';
     const code = selectedCode || getSelectedLanguageCode();
 
-    const selected = languages.find((l) => l.code === code);
-    const rest = languages.filter((l) => l.code !== code);
-    const ordered = selected ? [selected, ...rest] : languages;
+    const ordered = sortLanguagesByName(languages);
 
     ordered.forEach((lang) => {
         const primary = lang.name || lang.code || '';
@@ -102,8 +127,9 @@ function renderLanguageList(languages, selectedCode) {
         listEl.appendChild(item);
     });
 
-    const selectedRow = listEl.querySelector('.language-list-item.selected');
-    if (selectedRow) listEl.scrollTop = 0;
+    updateLanguageCurrentBar();
+    listEl.scrollTop = 0;
+    updateLanguageListTotal();
 }
 
 function escapeHtml(str) {
@@ -122,6 +148,7 @@ function getSelectedLanguageName() {
 function updateLanguageFieldValue() {
     const el = document.getElementById('language-field-value');
     if (el) el.textContent = getSelectedLanguageName();
+    updateLanguageCurrentBar();
 }
 
 function selectLanguageItem(code, clickedEl) {
@@ -133,7 +160,6 @@ function selectLanguageItem(code, clickedEl) {
     if (clickedEl) {
         clickedEl.classList.add('selected');
         clickedEl.setAttribute('aria-selected', 'true');
-        clickedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
     updateLanguageFieldValue();
     closeLanguagePicker();
@@ -203,12 +229,16 @@ export function openLanguagePicker() {
     if (clearBtn) clearBtn.tabIndex = 0;
     if (searchTriggerBtn) searchTriggerBtn.tabIndex = 0;
 
-    // Default to list-first navigation: focus selected/first language.
-    // Search is opt-in via the search trigger/button.
+    updateLanguageCurrentBar();
+    updateLanguageListTotal();
+
+    // Current language is shown in the bar above the list; keep list scrolled to top.
+    if (listEl) listEl.scrollTop = 0;
+
+    // Focus search first (short path to type); fall back to first list row, then Language settings row.
     setTimeout(() => {
-        const selectedItem = listEl ? listEl.querySelector('.language-list-item.selected') : null;
         const firstItem = listEl ? listEl.querySelector('.language-list-item') : null;
-        const target = selectedItem || firstItem || searchTriggerBtn || trigger;
+        const target = searchTriggerBtn || firstItem || trigger;
         if (target) target.focus();
     }, 0);
 }

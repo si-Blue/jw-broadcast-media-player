@@ -7,6 +7,12 @@ import * as Api from '../api/api.js';
 let videoControlHandler = null;
 let audioBackHandler = null;
 
+/** localStorage key for resume position — must match all read sites in app.js */
+export function getProgressStorageKey(item) {
+    if (!item) return '';
+    return `progress_${item.title}_${item.guid || item.lank}`;
+}
+
 function escapeHtml(value) {
     if (value == null) return '';
     return String(value)
@@ -60,9 +66,25 @@ function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
     };
     player.onloadedmetadata = () => {
         playerContainer.querySelector('.playback-error-overlay')?.remove();
-        if (startTime > 0) player.currentTime = startTime;
+        if (startTime > 0) {
+            try {
+                player.currentTime = startTime;
+            } catch (_) {}
+        }
         player.play();
     };
+    // webOS/Chromium: seek may apply after loadeddata; ensure resume position sticks
+    if (startTime > 0) {
+        const onceSeek = () => {
+            if (player.readyState >= 1 && Math.abs(player.currentTime - startTime) > 2) {
+                try {
+                    player.currentTime = startTime;
+                } catch (_) {}
+            }
+        };
+        player.addEventListener('loadeddata', onceSeek, { once: true });
+        player.addEventListener('canplay', onceSeek, { once: true });
+    }
     player.ontimeupdate = () => {
         if (player.currentTime > 5) localStorage.setItem(storageKey, player.currentTime);
     };
@@ -110,7 +132,7 @@ function playVideo(files, storageKey, startTime = 0, playNextOnEnd = true) {
 
 function playAudio(item, startTime = 0, playNextOnEnd = true) {
     const playerContainer = document.getElementById('player-container');
-    const storageKey = `progress_${item.title}_${item.guid || item.lank}`;
+    const storageKey = getProgressStorageKey(item);
     const file = item.files?.find(f => f.progressiveDownloadURL)?.progressiveDownloadURL;
     if (!file) return;
 
@@ -325,7 +347,7 @@ async function playNext() {
             if (full.guid != null) item.guid = full.guid;
         }
     }
-    const storageKey = `progress_${item.title}_${item.guid || item.lank}`;
+    const storageKey = getProgressStorageKey(item);
     const isAudio = item.type === 'audio' || item.subtype === 'audio' || !item.files?.some(f => f.label?.includes('p'));
     if (isAudio) {
         if (item.files?.some?.(f => f.progressiveDownloadURL)) playAudio(item);

@@ -1655,13 +1655,80 @@ textarea:focus {
     background: rgba(255, 255, 255, 0.08);
     outline: none;
 }
+
+/* Current language + total (above search; read-only, not input-like) */
+.language-current-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    margin-top: 0;
+    padding: 12px 14px 12px 16px;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-left: 4px solid #4a90e2;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+.language-current-bar {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+.language-current-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #8a9aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.language-current-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.language-list-total {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #888;
+    max-width: 42%;
+    text-align: right;
+}
+
 .language-list {
     max-height: 320px;
     overflow-y: auto;
     border: 2px solid #444;
     border-radius: 10px;
     background: #1a1a1a;
+    scrollbar-width: thin;
+    scrollbar-color: #4a90e2 #2a2a2a;
 }
+/* WebKit scrollbar: visible on dark list (webOS/Chromium) */
+.language-list::-webkit-scrollbar {
+    width: 10px;
+}
+.language-list::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 0 8px 8px 0;
+}
+.language-list::-webkit-scrollbar-thumb {
+    background: #4a90e2;
+    border-radius: 6px;
+    border: 2px solid #2a2a2a;
+}
+.language-list::-webkit-scrollbar-thumb:hover {
+    background: #6aa8f0;
+}
+
 .language-list-item {
     display: flex;
     align-items: center;
@@ -1677,18 +1744,29 @@ textarea:focus {
     background: transparent;
     font-family: inherit;
 }
-.language-list-item:hover,
-.language-list-item:focus {
+.language-list-item:hover {
     background: rgba(255, 255, 255, 0.06);
     outline: none;
+}
+/* D-pad focus: clear row highlight (not the same as selected) */
+.language-list-item:focus:not(.selected),
+.language-list-item:focus-visible:not(.selected) {
+    background: rgba(255, 255, 255, 0.14);
+    outline: none;
+    box-shadow: inset 4px 0 0 #7ab8ff;
 }
 .language-list-item.selected {
     background: #4a90e2;
     color: #fff;
 }
 .language-list-item.selected:hover,
-.language-list-item.selected:focus {
+.language-list-item.selected:focus,
+.language-list-item.selected:focus-visible {
     background: #5aa0f2;
+    box-shadow: none;
+}
+.language-list-item.selected:focus-visible {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 .language-list-item .language-item-text {
     flex: 1;

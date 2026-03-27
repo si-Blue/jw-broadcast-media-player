@@ -219,8 +219,8 @@ function reattachEventListeners() {
         const itemIndex = Math.max(0, Math.min(State.playlistIndex, State.currentPlaylist.length - 1));
         const item = State.currentPlaylist[itemIndex];
         if (item) {
-            const storageKey = `progress_${item.title}_${item.guid}`;
-            const savedTime = localStorage.getItem(storageKey);
+            const storageKey = Playback.getProgressStorageKey(item);
+            const savedTime = storageKey ? localStorage.getItem(storageKey) : null;
             const hasProgress = savedTime && parseFloat(savedTime) > 10;
             const isAudio = item.type === 'audio' || !item.files?.some(f => f.label?.includes('p'));
             btn1.onclick = () => {
@@ -620,8 +620,8 @@ async function showLandingPage(item, i, isAudio, options) {
     hero.innerHTML = "";
     container.classList.remove("grid");
 
-    const storageKey = `progress_${item.title}_${item.guid || item.lank}`;
-    const savedTime = localStorage.getItem(storageKey);
+    const storageKey = Playback.getProgressStorageKey(item);
+    const savedTime = storageKey ? localStorage.getItem(storageKey) : null;
     const hasProgress = savedTime && parseFloat(savedTime) > 10;
 
     const previewImg = UI.getMediaThumbnailUrl(item, isAudio);
