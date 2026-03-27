@@ -70,8 +70,11 @@ function buildNavigationState() {
     container.querySelectorAll('.media-row-wrapper').forEach(w => { if (w.id) sectionIds.push(w.id); });
     const sectionType = activeCategory === 'home' ? 'home' : (activeCategory === 'VideoOnDemand' ? 'categories' : 'content');
 
+    const sectionTitleText = document.getElementById('section-title')?.innerText;
+    const viewTitle = sectionTitleText == null ? '' : String(sectionTitleText);
+
     return {
-        view: document.getElementById('section-title')?.innerText || 'Home',
+        view: viewTitle,
         activeCategory: activeCategory,
         containerHTML: container.innerHTML,
         heroHTML: hero.innerHTML,
@@ -127,7 +130,7 @@ function restoreNavigationState(state) {
             const leaveFor = {};
             if (index < sectionIds.length - 1) leaveFor.down = `@${sectionIds[index + 1]}`;
             if (index > 0) leaveFor.up = `@${sectionIds[index - 1]}`;
-            SpatialNavigation.add(id, {
+            spatialAddSection(id, {
                 selector: `#${id} .media-item-card, #${id} .action-card-blue`,
                 restrict: 'self-only',
                 leaveFor: Object.keys(leaveFor).length ? leaveFor : undefined
@@ -235,16 +238,76 @@ function reattachEventListeners() {
     const catWatchNow = document.getElementById('cat-watch-now');
     if (catWatchNow) catWatchNow.onclick = triggerWatchNow;
 
+    wireCategoryHeroSpatialIfPresent();
     Nav.registerSpatialNavigationForNewContent();
 }
 
 let homeSections = [];
 let contentPageSections = [];
 
+/** Remove then add so we never hit "Section has already existed" after races or missed bookkeeping. */
+function spatialAddSection(sectionId, config) {
+    if (typeof SpatialNavigation === 'undefined') return;
+    SpatialNavigation.remove(sectionId);
+    SpatialNavigation.add(sectionId, config);
+}
+
+function clearNavSpatialDownToHero() {
+    document.querySelectorAll('.nav-item').forEach(n => n.removeAttribute('data-sn-down'));
+}
+
+function wireTopNavHorizontalNavigation() {
+    const home = document.querySelector('.nav-item[data-cat="home"]');
+    const categories = document.querySelector('.nav-item[data-cat="VideoOnDemand"]');
+    const audio = document.querySelector('.nav-item[data-cat="AudioOnDemand"]');
+    const watch = document.getElementById('global-watch-now');
+    const search = document.getElementById('search-btn');
+    const settings = document.getElementById('settings-btn');
+    const ordered = [home, categories, audio, watch, search, settings].filter(Boolean);
+    ordered.forEach((el, idx) => {
+        const leftTarget = ordered[Math.max(0, idx - 1)];
+        const rightTarget = ordered[Math.min(ordered.length - 1, idx + 1)];
+        if (leftTarget?.id) el.setAttribute('data-sn-left', `#${leftTarget.id}`);
+        else if (leftTarget) el.setAttribute('data-sn-left', `.nav-item[data-cat="${leftTarget.getAttribute('data-cat')}"]`);
+        if (rightTarget?.id) el.setAttribute('data-sn-right', `#${rightTarget.id}`);
+        else if (rightTarget) el.setAttribute('data-sn-right', `.nav-item[data-cat="${rightTarget.getAttribute('data-cat')}"]`);
+    });
+}
+
+/**
+ * Link category hero Watch Now to first grid focusable and active nav (remote D-pad).
+ * No-op when hero or first item is missing.
+ */
+function wireCategoryHeroSpatialIfPresent() {
+    const catWatch = document.getElementById('cat-watch-now');
+    if (!catWatch) {
+        clearNavSpatialDownToHero();
+        return;
+    }
+    const firstRow = document.querySelector('#grid-container .media-row-wrapper');
+    let firstItem = null;
+    if (firstRow) {
+        firstItem = firstRow.querySelector('.media-item-card, .action-card-blue');
+    } else {
+        firstItem = document.querySelector('#grid-container .media-item-card');
+    }
+    if (!firstItem || !firstItem.id) {
+        clearNavSpatialDownToHero();
+        return;
+    }
+    catWatch.setAttribute('data-sn-down', `#${firstItem.id}`);
+    firstItem.setAttribute('data-sn-up', '#cat-watch-now');
+    const activeNav = document.querySelector('.nav-item.active');
+    if (activeNav) activeNav.setAttribute('data-sn-down', '#cat-watch-now');
+}
+
 function clearDynamicSections() {
     if (typeof SpatialNavigation !== 'undefined') {
         homeSections.forEach(id => SpatialNavigation.remove(id));
         contentPageSections.forEach(id => SpatialNavigation.remove(id));
+        for (let i = 0; i < 32; i++) {
+            SpatialNavigation.remove(`row-${i}`);
+        }
     }
     homeSections = [];
     contentPageSections = [];
@@ -299,6 +362,7 @@ async function loadHomePage() {
     document.getElementById('hero-section').innerHTML = "";
     State.setPlaylist([]);
     clearDynamicSections();
+    clearNavSpatialDownToHero();
 
     try {
         const [featured, latest] = await Promise.all([
@@ -342,7 +406,7 @@ async function loadHomePage() {
             if (index < homeSections.length - 1) leaveFor.down = `@${homeSections[index + 1]}`;
             if (index > 0) leaveFor.up = `@${homeSections[index - 1]}`;
 
-            SpatialNavigation.add(id, {
+            spatialAddSection(id, {
                 selector: `#${id} .media-item-card, #${id} .action-card-blue`,
                 restrict: 'self-only',
                 leaveFor: Object.keys(leaveFor).length ? leaveFor : undefined
@@ -372,6 +436,7 @@ async function loadTopLevelCategories() {
     document.getElementById('hero-section').innerHTML = "";
     State.setPlaylist([]);
     clearDynamicSections();
+    clearNavSpatialDownToHero();
 
     try {
         const data = await Api.fetchCategory('VideoOnDemand', State.getLang());
@@ -405,6 +470,7 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
     updateGlobalActionBtn(isAudio ? "Listen Now" : "Watch Now");
     State.setPlaylist([]);
     clearDynamicSections();
+    clearNavSpatialDownToHero();
 
     try {
         const data = await Api.fetchCategory(categoryKey, State.getLang());
@@ -471,7 +537,7 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
         State.setPlaylist(newPlaylist);
 
         contentPageSections.forEach((id, index) => {
-            SpatialNavigation.add(id, {
+            spatialAddSection(id, {
                 selector: `#${id} .media-item-card, #${id} .action-card-blue`,
                 restrict: 'self-only'
             });
@@ -499,6 +565,8 @@ async function loadContentPage(categoryKey, title, isAudio = false) {
             }
         });
 
+        wireCategoryHeroSpatialIfPresent();
+        Nav.registerSpatialNavigationForNewContent();
         Nav.refreshSpatialNavigation();
         UI.observeLazyImages();
     } catch (err) {
@@ -823,6 +891,7 @@ window.onload = () => {
 
     loadHomePage();
     document.querySelector('.nav-item[data-cat="home"]')?.classList.add('active');
+    wireTopNavHorizontalNavigation();
 
     document.getElementById('global-watch-now').onclick = triggerWatchNow;
 
@@ -993,6 +1062,51 @@ window.onload = () => {
                     e.stopPropagation();
                     const closeBtn = document.getElementById('search-close-btn');
                     if (closeBtn) closeBtn.focus();
+                    return;
+                }
+            }
+        }
+
+        // Keep focus locked in settings while modal is open.
+        if (settingsModal && !settingsModal.classList.contains('hidden')) {
+            if (keyCode === 13 || e.key === 'Enter') {
+                const active = document.activeElement;
+                const target = active && settingsModal.contains(active)
+                    ? active.closest('.settings-list-row, .settings-save-btn, .settings-close-btn, .language-list-item, .resolution-option, #language-search-trigger, #language-search-clear')
+                    : null;
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                if (!target) {
+                    const firstRow = settingsModal.querySelector('.settings-list-row');
+                    if (firstRow) firstRow.focus();
+                    return;
+                }
+                if (target.id === 'language-search-trigger') {
+                    const languageSearchInput = document.getElementById('language-search');
+                    if (languageSearchInput) {
+                        languageSearchInput.tabIndex = 0;
+                        languageSearchInput.focus();
+                    }
+                    return;
+                }
+                if (typeof target.click === 'function') target.click();
+                return;
+            }
+            if (keyCode === 13 || keyCode === 37 || keyCode === 38 || keyCode === 39 || keyCode === 40) {
+                const active = document.activeElement;
+                if (!active || !settingsModal.contains(active)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    if (typeof SpatialNavigation !== 'undefined') {
+                        SpatialNavigation.focus('settings-modal');
+                    }
+                    const firstRow = settingsModal.querySelector('.settings-list-row');
+                    if (firstRow) {
+                        firstRow.focus();
+                        if (typeof SpatialNavigation !== 'undefined') SpatialNavigation.focus(firstRow);
+                    }
                     return;
                 }
             }

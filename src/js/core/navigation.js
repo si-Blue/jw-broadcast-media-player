@@ -3,8 +3,8 @@ export let navigationStack = [];
 const MAX_NAVIGATION_STACK = 5;
 
 // Main content only; search modal has its own section (search-modal) with restrict 'self-only'
-const SPATIAL_SELECTORS = '.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, #search-bar-trigger, .audio-pause-button, .settings-close-btn, .settings-save-btn, .settings-select, .settings-toggle, #language-select, #subtitles-toggle, #resolution-select, .error-retry-btn, .error-close-btn';
-const SPATIAL_SELECTORS_NEW = '.media-item-card, .video-card, .action-card-blue, .landing-btn, .audio-pause-button, .audio-progress-track, .error-retry-btn, .error-close-btn';
+const SPATIAL_SELECTORS = '.nav-item, .watch-now-btn, .header-action-btn, .media-item-card, .video-card, .action-card-blue, .landing-btn, #search-bar-trigger, .audio-pause-button, .error-retry-btn, .error-close-btn';
+const MAIN_SPATIAL_SECTION_ID = 'main-navigation';
 
 /**
  * Save full navigation state. Caller should pass state object with:
@@ -88,7 +88,7 @@ export function initializeSpatialNavigation() {
             restrict: 'self-only',
             enterTo: 'default-element',
         });
-        SpatialNavigation.add({
+        SpatialNavigation.add(MAIN_SPATIAL_SECTION_ID, {
             selector: SPATIAL_SELECTORS,
             enterTo: 'default-element',
         });
@@ -116,11 +116,17 @@ export function addHorizontalWrap(sectionId) {
 
 export function registerSpatialNavigationForNewContent() {
     if (typeof SpatialNavigation !== 'undefined') {
-        SpatialNavigation.add({
-            selector: SPATIAL_SELECTORS_NEW,
+        const mainConfig = {
+            selector: SPATIAL_SELECTORS,
             enterTo: 'default-element'
-        });
-        SpatialNavigation.makeFocusable();
+        };
+        if (typeof SpatialNavigation.set === 'function') {
+            SpatialNavigation.set(MAIN_SPATIAL_SECTION_ID, mainConfig);
+        } else {
+            SpatialNavigation.remove(MAIN_SPATIAL_SECTION_ID);
+            SpatialNavigation.add(MAIN_SPATIAL_SECTION_ID, mainConfig);
+        }
+        SpatialNavigation.makeFocusable(MAIN_SPATIAL_SECTION_ID);
     }
 }
 

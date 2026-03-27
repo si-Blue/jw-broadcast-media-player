@@ -497,15 +497,20 @@ export function openSettingsModal() {
     modal.classList.remove('hidden');
 
     if (typeof SpatialNavigation !== 'undefined') {
+        SpatialNavigation.remove('settings-modal');
         SpatialNavigation.add('settings-modal', {
             selector: '.settings-list-row, .settings-close-btn, .settings-save-btn, .settings-toggle, .language-list-item, .resolution-option, #language-search-trigger, .language-search-input',
             restrict: 'self-only',
             enterTo: 'default-element'
         });
         SpatialNavigation.makeFocusable('settings-modal');
+        SpatialNavigation.focus('settings-modal');
         setTimeout(() => {
             const firstRow = modal.querySelector('.settings-list-row');
-            if (firstRow) firstRow.focus();
+            if (firstRow) {
+                firstRow.focus();
+                SpatialNavigation.focus(firstRow);
+            }
         }, 100);
     }
 }
@@ -533,6 +538,7 @@ export function initSettings() {
             if (isLangItem) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 const code = focused.getAttribute('data-lang-code');
                 if (code) selectLanguageItem(code, focused);
                 return;
@@ -540,9 +546,10 @@ export function initSettings() {
             if (isLangSearchTrigger) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 activateLanguageSearch();
+                return;
             }
-            return;
         }
         if (isLangSearchTrigger && (e.keyCode === 40 || e.keyCode === 39 || e.keyCode === 37)) {
             e.preventDefault();
@@ -576,6 +583,27 @@ export function initSettings() {
     initSubtitlesRow();
     initLanguagePicker();
     initResolutionPicker();
+
+    const settingsModal = document.getElementById('settings-modal');
+    if (settingsModal) {
+        // Fallback for remotes that don't dispatch click for focused controls.
+        settingsModal.addEventListener('keydown', (e) => {
+            if (e.keyCode !== 13 && e.key !== 'Enter') return;
+            const focused = document.activeElement;
+            if (!focused || !settingsModal.contains(focused)) return;
+            const target = focused.closest(
+                '.settings-list-row, .settings-save-btn, .settings-close-btn, .language-list-item, .resolution-option, #language-search-trigger, #language-search-clear'
+            );
+            if (!target) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (target.id === 'language-search-trigger') {
+                activateLanguageSearch();
+                return;
+            }
+            if (typeof target.click === 'function') target.click();
+        }, true);
+    }
 
     const saveBtn = document.getElementById('settings-save-btn');
     if (saveBtn) saveBtn.onclick = saveSettings;
